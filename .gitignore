@@ -1,0 +1,15 @@
+# Python Compiler Artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build and Environment Artifacts
+build/
+dist/
+*.egg-info/
+.venv/
+env/
+
+# Local Assets & Tools (Cloud Streamed Only)
+assets/
+Tools/

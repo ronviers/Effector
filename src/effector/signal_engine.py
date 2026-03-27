@@ -1,0 +1,192 @@
+"""
+Signal Superposition Engine — DASP §6
+Computes S_g, S_i, S_net per hypothesis.
+Evaluates Inhibition, Stall, and Consensus gates.
+Supports DASP-A1 reputation weighting.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+from effector.schemas.dasp import AgentResponse, HypothesisSignal, HypothesisFinalState
+
+if TYPE_CHECKING:
+    from effector.state_bus.bus import StateBus
+
+
+@dataclass
+class SignalManifold:
+    """Running signal state for one hypothesis across all agents."""
+    hypothesis_id: str
+    S_g: float = 0.0
+    S_i: float = 0.0
+    prev_S_net: float = 0.0
+    final_state: HypothesisFinalState = HypothesisFinalState.abandoned
+
+    @property
+    def S_net(self) -> float:
+        return self.S_g - self.S_i
+
+    def to_schema(self) -> HypothesisSignal:
+        return HypothesisSignal(
+            S_g=self.S_g,
+            S_i=self.S_i,
+            S_net=self.S_net,
+            final_state=self.final_state,
+        )
+
+
+@dataclass
+class GateResult:
+    inhibition_fired: bool = False
+    stall_fired: bool = False
+    consensus_cleared: bool = False
+    winning_hypothesis: str | None = None
+    consensus_score: float = 0.0
+    details: dict = field(default_factory=dict)
+
+
+class SignalEngine:
+    """
+    Computes signal superposition and evaluates gate conditions.
+    Holds state across rounds for a single DASP session.
+    """
+
+    def __init__(
+        self,
+        tau_suppression: float,
+        theta_consensus: float,
+        epsilon_stall: float,
+        state_bus: "StateBus | None" = None,
+        use_reputation: bool = True,
+    ) -> None:
+        self.tau_suppression = tau_suppression
+        self.theta_consensus = theta_consensus
+        self.epsilon_stall = epsilon_stall
+        self._bus = state_bus
+        self.use_reputation = use_reputation
+        self._manifolds: dict[str, SignalManifold] = {}
+        self._canceled: set[str] = set()
+
+    # ─── Update ─────────────────────────────────────────────────────────────
+
+    def ingest_responses(self, responses: list[AgentResponse]) -> None:
+        """
+        Accumulate signals from a round's responses into the manifold.
+        Resets per-hypothesis accumulators before each call (round-level, not session-level).
+        Call once per round with all responses for that round.
+        """
+        # Reset current round accumulators
+        for m in self._manifolds.values():
+            m.prev_S_net = m.S_net
+            m.S_g = 0.0
+            m.S_i = 0.0
+
+        for resp in responses:
+            hid = resp.hypothesis_id
+            if hid in self._canceled:
+                continue
+
+            if hid not in self._manifolds:
+                self._manifolds[hid] = SignalManifold(hypothesis_id=hid)
+
+            manifold = self._manifolds[hid]
+            sig = resp.signal
+            weight = self._reputation_weight(resp.agent_id)
+
+            if sig.polarity >= 0:
+                manifold.S_g += weight * sig.confidence * sig.generative_strength
+            if sig.polarity <= 0:
+                manifold.S_i += weight * sig.confidence * sig.inhibitory_pressure
+
+    def _reputation_weight(self, agent_id: str) -> float:
+        if not self.use_reputation or self._bus is None:
+            return 1.0
+        return self._bus.get_reputation(agent_id)
+
+    # ─── Gate evaluation ────────────────────────────────────────────────────
+
+    def evaluate_gates(self) -> GateResult:
+        """
+        Evaluate all gates in priority order (P1 → P2 → P3).
+        Returns the first gate that fires.
+        """
+        result = GateResult()
+
+        for hid, m in self._manifolds.items():
+            if hid in self._canceled:
+                continue
+
+            # P1: Inhibition Gate — circuit breaker
+            if m.S_g > 0 and m.S_i >= self.tau_suppression * m.S_g:
+                result.inhibition_fired = True
+                result.details[hid] = {
+                    "gate": "inhibition",
+                    "S_g": m.S_g, "S_i": m.S_i,
+                    "ratio": m.S_i / m.S_g,
+                }
+                self._canceled.add(hid)
+                m.final_state = HypothesisFinalState.phase_canceled
+                continue
+
+            # P2: Stall Gate
+            delta = abs(m.S_net - m.prev_S_net)
+            if delta < self.epsilon_stall and m.S_g > 0:
+                result.stall_fired = True
+                result.details[hid] = {
+                    "gate": "stall",
+                    "delta": delta, "epsilon_stall": self.epsilon_stall,
+                }
+                m.final_state = HypothesisFinalState.stalled
+                continue
+
+            # P3: Consensus Gate
+            if m.S_net >= self.theta_consensus:
+                result.consensus_cleared = True
+                result.winning_hypothesis = hid
+                result.consensus_score = m.S_net
+                m.final_state = HypothesisFinalState.consensus
+                break  # first hypothesis to clear is the winner
+
+        return result
+
+    def copy_detected(self, responses: list[AgentResponse], threshold: float = 0.9) -> bool:
+        """Detect if answer hashes have converged above threshold fraction."""
+        if len(responses) < 2:
+            return False
+        by_hypothesis: dict[str, list[str]] = {}
+        for r in responses:
+            by_hypothesis.setdefault(r.hypothesis_id, []).append(r.answer_hash)
+        for hashes in by_hypothesis.values():
+            if len(hashes) < 2:
+                continue
+            unique = len(set(hashes))
+            if unique / len(hashes) <= (1 - threshold):
+                return True
+        return False
+
+    def swap_detected(self, prev_responses: list[AgentResponse], curr_responses: list[AgentResponse]) -> bool:
+        """Detect if agents have exchanged positions without signal improvement."""
+        if not prev_responses or not curr_responses:
+            return False
+        prev_map = {r.agent_id: r.signal.polarity for r in prev_responses}
+        curr_map = {r.agent_id: r.signal.polarity for r in curr_responses}
+        common = set(prev_map) & set(curr_map)
+        if len(common) < 2:
+            return False
+        # Swap: at least one agent flipped polarity and another flipped back
+        flips = [a for a in common if prev_map[a] != curr_map[a]]
+        return len(flips) >= 2
+
+    def manifold_snapshot(self) -> dict[str, HypothesisSignal]:
+        return {hid: m.to_schema() for hid, m in self._manifolds.items()}
+
+    def best_hypothesis(self) -> tuple[str | None, float]:
+        """Return (hypothesis_id, S_net) for the highest net signal, ignoring canceled."""
+        active = {hid: m for hid, m in self._manifolds.items() if hid not in self._canceled}
+        if not active:
+            return None, 0.0
+        best = max(active.items(), key=lambda kv: kv[1].S_net)
+        return best[0], best[1].S_net
