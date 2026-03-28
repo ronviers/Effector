@@ -54,23 +54,63 @@ ORCHESTRATION
 ## Package layout
 
 ```
-effector/
-├── __init__.py              # Public API
-├── session.py               # start_session(), EffectorSession, IEPExecutor
-├── schemas/
-│   ├── dasp.py              # DebateStart, AgentRequest, AgentResponse, DebateResult
-│   └── iep.py               # IntentionEnvelope, ReflexEnvelope, VerificationResult
-├── coordinator/
-│   ├── coordinator.py       # DASPCoordinator — main debate loop
-│   └── signal_engine.py     # SignalEngine — S_g / S_i / gate evaluation
-├── state_bus/
-│   ├── bus.py               # StateBus — world state, SHA-256 snapshots, delta log
-│   └── verifier.py          # IEPVerifier — pre-flight + post-execution checks
-├── adapters/
-│   └── anthropic_adapter.py # AnthropicAgent, ToolRegistry, make_agent_callable
-└── tests/
-    └── test_effector.py       # Full unit test suite (no LLM required)
+PS H:\Effector> tree /f
+Folder PATH listing for volume Projects
+H:.
+│   .gitignore
+│   pyproject.toml
+│   README.md
+│
+├───.git
+...
+├───assets
+│   └───Artwork
+├───examples
+├───src
+│   └───effector
+│       │   bus.py
+│       │   coordinator.py
+│       │   dasp.py
+│       │   example_debate.py
+│       │   iep.py
+│       │   session.py
+│       │   signal_engine.py
+│       │   verifier.py
+│       │   __init__.py
+│       │
+│       └───adapters
+│               anthropic_adapter.py
+│               ollama_adapter.py
+│               __init__.py
+│
+├───tests
+│       __init__.py
+│
+└───Tools
+PS H:\Effector>
 ```
+PS F:\ImbricOffline\My Drive\Gemini Gems\Effector> tree /f
+Folder PATH listing for volume CustomLibraries
+F:.
+├───Knowledge_Base
+│       Effector Engine_ Foundational Design & Worldspillage.docx
+│       The Glimmer Registry.docx
+│       Cozy Characters.docx
+│       claude artifacts.docx
+│       pip_scones_cozy_nature_2026.docx
+│       PrimitivePartition - ToDo_s.docx
+│       protocol-suite-v2.docx
+│       README.md
+│
+├───Assets
+│   └───Artwork
+│           Gemini_Generated_Image_okufd3okufd3okuf.png
+│
+└───Cold_Archive
+        effector_engine_cozy_wiki.html
+        snug_periodic_table_interactive.html
+
+PS F:\ImbricOffline\My Drive\Gemini Gems\Effector>
 
 ## Event hooks
 
