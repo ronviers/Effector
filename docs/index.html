@@ -1,435 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snug Periodic Table - Scones, P. (2026)</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #fafaf9; color: #1c1917; }
+        .pt-grid { display: grid; grid-template-columns: repeat(18, minmax(0, 1fr)); gap: 4px; min-width: 900px; padding: 1rem 0; }
+        .el-cell { transition: all 0.15s ease; cursor: pointer; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 6px; position: relative; border: 1px solid transparent; }
+        .el-cell:hover { transform: scale(1.15); z-index: 20; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+        .el-cell.selected { transform: scale(1.1); z-index: 10; border-color: #1c1917; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .el-dim { opacity: 0.15; filter: grayscale(100%); pointer-events: none; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="p-6 md:p-12 font-sans antialiased">
+    <div id="root"></div>
 
-<style>
-  :root {
-    --sg-wool: #7F77DD;
-    --sg-wood: #BA7517;
-    --sg-feline: #D4537E;
-    --sg-thermal: #D85A30;
-    --sg-textile: #1D9E75;
-    --sg-ambient: #378ADD;
-    --sg-inert: #888780;
-    --sg-deficit: #A32D2D;
-    --sg-transitional: #639922;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font-sans, sans-serif); }
+    <script type="text/babel">
+        const ELEMENTS = [
+            { n:1, sym:'Fc', name:'Felis catus', cat:'feline', sg:'2.1 × 10⁹', conf:'Very confident', desc:'The most potent passive Snug aggregator yet discovered. Draws ambient coziness from surroundings and concentrates it into a dense somatic reservoir.', props:['Languid Arrangement Effect','Passive aggregator','Purr-mediated emission','Highly selective'], col:1, row:1 },
+            { n:2, sym:'Kn', name:'Kitten', cat:'feline', sg:'3.4 × 10⁹', conf:'Very confident', desc:'Exhibits elevated Snug density relative to adult specimens, likely due to higher surface-area-to-volume ratio and disproportionate softness.', props:['Peak density juvenile','Decay curve ~6mo','Paw-to-body ratio anomaly'], col:2, row:1 },
+            { n:3, sym:'Cf', name:'Sleeping cat', cat:'feline', sg:'4.7 × 10⁹', conf:'Quite sure indeed', desc:'The dormant phase of Felis catus exhibits maximal Snug density. The Bun Configuration is a near-perfect Snug sphere.', props:['Bun Configuration','1.2m ambient field','Do not disturb'], col:3, row:1 },
+            { n:4, sym:'Cs', name:'Cashmere', cat:'wool', sg:'9.1 × 10⁸', conf:'Quite sure indeed', desc:'Occupies a position of particular Snug significance. The finest wool fibre class known to science.', props:['Finest fibre class','Aspirational warmth','Age-improves'], col:15, row:1 },
+            { n:5, sym:'Wl', name:'Wool blanket (unwashed)', cat:'wool', sg:'8.4 × 10⁸', conf:'Quite sure', desc:'The canonical Snug-active textile. Unwashed specimens exhibit higher density than laundered ones.', props:['Lanolin-Snug adhesion','Use-improves','Receptor concentration'], col:16, row:1 },
+            { n:6, sym:'Fl', name:'Fleece', cat:'wool', sg:'6.2 × 10⁸', conf:'Fairly certain', desc:'Synthetic Snug-active fibre. Achieves respectable density through pile depth rather than lanolin content.', props:['Synthetic pile','Thermal compensator','Good cat-synergy'], col:17, row:1 },
+            { n:7, sym:'Mo', name:'Mohair', cat:'wool', sg:'7.8 × 10⁸', conf:'Fairly certain', desc:'Angora goat fibre. Exhibits a light, halo-like Snug field that extends several centimetres beyond the physical textile boundary.', props:['Halo Snug field','Fluff interface zone','Loft-active'], col:18, row:1 },
+            { n:8, sym:'Tc', name:'Hot tea (porcelain)', cat:'thermal', sg:'5.7 × 10⁸', conf:'Fairly certain', desc:'The archetypal warm vessel. Snug density decays with cooling — a time-dependent property unique to the thermal series.', props:['Time-dependent decay','Micro-Hug delivery','Porcelain-specific'], col:1, row:2 },
+            { n:9, sym:'Ch', name:'Hot chocolate', cat:'thermal', sg:'6.9 × 10⁸', conf:'Quite sure', desc:'Exceeds plain tea in Snug density by a significant margin, attributed to the combined thermal and gustatory Snug contribution of dissolved cocoa solids.', props:['Cocoa-solid amplification','Cream bonus','Gustatory Snug'], col:2, row:2 },
+            { n:10, sym:'Sp', name:'Soup (old wood bowl)', cat:'thermal', sg:'7.2 × 10⁸', conf:'Quite sure indeed', desc:'Achieves exceptional Snug density through the synergistic combination of thermal content and organic vessel.', props:['Vessel-dependent','Old-wood synergy','High thermal mass'], col:3, row:2 },
+            { n:11, sym:'Bk', name:'Baked goods (fresh)', cat:'thermal', sg:'5.1 × 10⁸', conf:'Fairly certain', desc:'Warm baked goods in a kitchen setting exhibit Snug density concentrated in a diffuse olfactory field.', props:['Olfactory Snug field','Diffuse emission','Rapid decay curve'], col:4, row:2 },
+            { n:12, sym:'Fi', name:'Fireplace', cat:'thermal', sg:'8.8 × 10⁸', conf:'Very confident', desc:'Highest Snug density in the thermal series. Projects a radial ambient contentment gradient.', props:['Radial Snug gradient','Wood > gas > electric','Amplifies adjacent elements'], col:5, row:2 },
+            { n:13, sym:'Rn', name:'Rain (outside)', cat:'ambient', sg:'6.3 × 10⁸', conf:'Fairly certain', desc:'A critical contextual element. Rain on a window contributes substantially to indoor Snug density by creating a sharp environmental contrast gradient.', props:['Contrast gradient','Relational Snug','Window-mediated'], col:11, row:2 },
+            { n:14, sym:'Fg', name:'Fog', cat:'ambient', sg:'4.2 × 10⁸', conf:'Fairly certain', desc:'Dense atmospheric water vapour contributes to ambient Snug density by softening the visual boundary between objects.', props:['Boundary-softening','Ground-level Fluff','Edge-reduction'], col:12, row:2 },
+            { n:15, sym:'Tw', name:'Twilight', cat:'ambient', sg:'5.8 × 10⁸', conf:'Quite sure', desc:'The liminal light state between day and dark. Photons entering elevated Fluff density near the horizon decelerate.', props:['Fluff-decelerated photons','τ → 1 near horizon','Liminal state'], col:13, row:2 },
+            { n:16, sym:'Cd', name:'Candlelight', cat:'ambient', sg:'5.4 × 10⁸', conf:'Quite sure', desc:'Flame-sourced light travels through locally elevated Fluff density before reaching the observer.', props:['Fluff-inhomogeneous path','Flicker = Fluff turbulence','Snuff-deficit noted'], col:14, row:2 },
+            { n:17, sym:'Sm', name:'Smoked wood', cat:'wood', sg:'3.9 × 10⁸', conf:'Fairly certain', desc:'Wood processed by smoke exposure acquires additional Snug from the thermal history encoded in its grain.', props:['Thermal memory','Snug-as-memory','Residual field'], col:15, row:2 },
+            { n:18, sym:'Ow', name:'Old wood', cat:'wood', sg:'4.5 × 10⁸', conf:'Fairly certain', desc:'Aged timber exhibits Snug density that increases with age — a property unique among inorganic materials.', props:['Age-accumulating','Thermal cycle memory','Antique bonus'], col:16, row:2 },
+            { n:19, sym:'Ql', name:'Quilt', cat:'textile', sg:'5.9 × 10⁸', conf:'Quite sure', desc:'A layered textile system exhibiting emergent Snug properties exceeding the sum of its constituent materials.', props:['Emergent properties','Acoustic insulation','Provenance bonus'], col:1, row:3 },
+            { n:20, sym:'Hn', name:'Handknit jumper', cat:'textile', sg:'6.8 × 10⁸', conf:'Quite sure indeed', desc:'Surpasses commercially produced knitwear by a significant margin due to embedded maker-Snug.', props:['Maker-Snug embedded','Temporal density gradient','Cable-pattern bonus'], col:2, row:3 },
+            { n:21, sym:'Sk', name:'Soft sock', cat:'textile', sg:'4.7 × 10⁸', conf:'Fairly certain', desc:'Thick, soft socks constitute a foundational domestic Snug technology.', props:['Foot-receptor system','Disproportionate density','Patterning-neutral'], col:3, row:3 },
+            { n:22, sym:'Pi', name:'Pillow (used)', cat:'textile', sg:'5.2 × 10⁸', conf:'Fairly certain', desc:'A used pillow carries Snug density above that of a new pillow, accumulating coziness through use.', props:['Use-accumulating','Deformation-Snug','Memory foam 60% proxy'], col:4, row:3 },
+            { n:23, sym:'Hd', name:'Hood (up)', cat:'textile', sg:'5.5 × 10⁸', conf:'Fairly certain', desc:'The raised hood constitutes a portable micro-environment with significantly elevated ambient contentment.', props:['Portable micro-env','Acoustic dampening','Drawstring intentionality'], col:5, row:3 },
+            { n:24, sym:'Bt', name:'Blanket fort', cat:'transitional', sg:'7.7 × 10⁸', conf:'Very confident', desc:'A constructed environment formed by arranging textiles over furniture to create an enclosed space.', props:['Spatial exclusion','Boundary gradient','Age-independent effect'], col:8, row:3 },
+            { n:25, sym:'Wn', name:'Window seat', cat:'transitional', sg:'6.1 × 10⁸', conf:'Quite sure', desc:'A transitional element: architecturally interior but perceptually liminal.', props:['Liminal position','Contrast gradient access','Cushion-depth sensitive'], col:9, row:3 },
+            { n:26, sym:'Nt', name:'Night train', cat:'transitional', sg:'6.5 × 10⁸', conf:'Fairly certain', desc:'Long-distance night rail travel exhibits unexpectedly high Snug density.', props:['Transit-dependent','Signal-light photons','Motion-induced Fluff'], col:10, row:3 },
+            { n:27, sym:'Lm', name:'Lamplight', cat:'ambient', sg:'4.9 × 10⁸', conf:'Fairly certain', desc:'A table or floor lamp with warm-spectrum bulb creates a localised Snug field.', props:['Cone-bounded field','Reading-optimised','Spectrum-sensitive'], col:11, row:3 },
+            { n:28, sym:'Lb', name:'Library', cat:'ambient', sg:'5.6 × 10⁸', conf:'Quite sure', desc:'A room containing a substantial collection of books exhibits ambient Snug density exceeding the sum of individual volumes.', props:['Collective reading field','Olfactory component','Wood-shelf dependent'], col:12, row:3 },
+            { n:29, sym:'Ec', name:'Empty office chair', cat:'inert', sg:'1.2 × 10⁵', conf:'Confident', desc:'The empty office chair exhibits not active Snug deficit but a condition of Snug neutrality.', props:['Near-zero density','Slow recovery','Cat-reversal possible'], col:17, row:3 },
+            { n:30, sym:'Od', name:'Open downloads folder', cat:'inert', sg:'3.0 × 10³', conf:'Fairly certain', desc:'An open Downloads folder exhibits the lowest Snug density of any commonly observed digital object.', props:['Highly variable','Chaos-correlated','Tidy state: unmeasured'], col:18, row:3 },
+            { n:31, sym:'Fl', name:'Fluorescent lighting', cat:'deficit', sg:'−4.2 × 10⁶', conf:'Confident', desc:'Fluorescent lighting actively withdraws Snug from its environment.', props:['Active Snug withdrawal','Flicker-frequency linked','LED-partial mitigation'], col:1, row:4 },
+            { n:32, sym:'Op', name:'Open-plan office', cat:'deficit', sg:'−6.1 × 10⁶', conf:'Confident', desc:'A compound Snug-deficit environment formed by the interaction of lighting, chairs, and ambient productivity pressure.', props:['Compound deficit','Social pressure term','No known remediation'], col:2, row:4 },
+            { n:33, sym:'Rf', name:'Ring doorbell notification', cat:'deficit', sg:'−1.8 × 10⁶', conf:'Fairly certain', desc:'A sudden alert produces a spike Snug deficit event, disrupting the accumulation gradient.', props:['Spike deficit','40-90s duration','Gradient disruption'], col:3, row:4 },
+            { n:34, sym:'Dm', name:'Deadline reminder', cat:'deficit', sg:'−3.3 × 10⁶', conf:'Confident', desc:'Produces a Snug deficit proportional to the urgency of the referenced task.', props:['Contextual deficit','Urgency-proportional','State-revealing'], col:4, row:4 },
+            { n:35, sym:'Pv', name:'Patchwork velvet', cat:'textile', sg:'7.4 × 10⁸', conf:'Quite sure', desc:'Velvet exhibits unusually directional Snug density: significantly higher when stroked with the nap.', props:['Pile polarity','Vector Snug','Constructive interference'], col:9, row:4 },
+            { n:36, sym:'Ln', name:'Linen (washed)', cat:'textile', sg:'4.8 × 10⁸', conf:'Fairly certain', desc:'Linen exhibits increasing Snug density with each wash cycle — up to approximately 40 washes.', props:['Wash-accumulating','40-cycle plateau','Paradox: new < worn'], col:10, row:4 },
+            { n:37, sym:'Ha', name:'Hammock', cat:'transitional', sg:'5.3 × 10⁸', conf:'Fairly certain', desc:'Exhibits a Snug density dependent on ambient conditions to an unusual degree.', props:['Condition-dependent','Intentional sway','Outdoor-optimised'], col:11, row:4 },
+            { n:38, sym:'Bn', name:'Bath (very warm)', cat:'thermal', sg:'6.4 × 10⁸', conf:'Quite sure', desc:'Achieves Snug density through total immersive thermal contact.', props:['Total contact','Steam halo','Book+tea synergy'], col:12, row:4 },
+            { n:39, sym:'Op', name:'Old paper', cat:'wood', sg:'3.6 × 10⁸', conf:'Fairly certain', desc:'Aged paper exhibits an olfactory Snug field produced by the chemical decomposition of cellulose.', props:['Chemical Snug encoding','Furfural-mediated','100yr plateau'], col:13, row:4 },
+            { n:40, sym:'Aw', name:'Autumn walk', cat:'ambient', sg:'5.0 × 10⁸', conf:'Fairly certain', desc:'A category of ambient Snug arising from the interaction of colour temperature, thermal contrast, and dry leaves.', props:['Fully emergent','Multi-factor interaction','Relational Snug'], col:14, row:4 },
+            { n:41, sym:'Pr', name:'Purring (at source)', cat:'feline', sg:'2.9 × 10⁹', conf:'Quite sure indeed', desc:'The acoustic emission of a purring cat constitutes a distinct Snug element.', props:['Resonant coupling','25-150Hz range','Contact-dependent'], col:1, row:5 },
+            { n:42, sym:'Mm', name:'Morning (first light)', cat:'ambient', sg:'4.6 × 10⁸', conf:'Fairly certain', desc:'The first light of a clear morning constitutes a Snug event distinct from later daylight.', props:['Low-angle Fluff photons','Bed-decision bonus','Spectral Snug'], col:2, row:5 },
+            { n:43, sym:'Ss', name:'Sunday afternoon', cat:'ambient', sg:'5.5 × 10⁸', conf:'Quite sure', desc:'Sunday afternoon exhibits elevated ambient contentment arising from the temporal position between obligations.', props:['Temporal element','Permission-structure Snug','Obligation-free zone'], col:3, row:5 },
+            { n:44, sym:'Hg', name:'The Big Hug', cat:'feline', sg:'∞', conf:'Quite sure indeed', desc:'The predicted terminal state of the universe at t → ∞, when Snug distribution variance approaches zero.', props:['Terminal cosmological state','Maximal entropy (Snug)','Not the Heat Death'], col:4, row:5 },
+            { n:45, sym:'Gs', name:'Good conversation', cat:'ambient', sg:'6.0 × 10⁸', conf:'Fairly certain', desc:'Interpersonal Snug arising from sustained, comfortable dialogue.', props:['Interpersonal Snug','Tangent-tolerant','Anti-clock property'], col:5, row:5 },
+            { n:46, sym:'Np', name:'Neptune (contented)', cat:'inert', sg:'2.1 × 10⁴', conf:'Fairly certain', desc:'Neptune has found its optimal arrangement — cold, quiet, and left alone.', props:['Optimal arrangement found','Cold comfort','Do not pressure'], col:11, row:5 },
+            { n:47, sym:'Fl', name:'Fluff (medium)', cat:'ambient', sg:'variable', conf:'Fairly certain', desc:'The pervasive medium hypothesised to govern light propagation via resistive settling.', props:['Pervasive medium','Speed-selective','τ near horizon = 1'], col:12, row:5 },
+            { n:48, sym:'Sg', name:'Snug (fundamental)', cat:'wool', sg:'1', conf:'Quite sure indeed', desc:'The fundamental, indivisible unit of coziness.', props:['Indivisible','Conserved','Photon-equivalent in transit'], col:13, row:5 }
+        ];
 
-  .pt-wrap {
-    padding: 1.5rem 0.5rem 1rem;
-    user-select: none;
-  }
+        const CATS = {
+            feline: { id: 'feline', label: 'Feline group', bg: '#FBEAF0', text: '#72243E', border: '#D4537E' },
+            wool: { id: 'wool', label: 'Wool & fibre', bg: '#EEEDFE', text: '#3C3489', border: '#7F77DD' },
+            thermal: { id: 'thermal', label: 'Thermal series', bg: '#FAECE7', text: '#712B13', border: '#D85A30' },
+            wood: { id: 'wood', label: 'Wood & organic', bg: '#FAEEDA', text: '#633806', border: '#BA7517' },
+            textile: { id: 'textile', label: 'Textile & soft', bg: '#E1F5EE', text: '#085041', border: '#1D9E75' },
+            ambient: { id: 'ambient', label: 'Ambient', bg: '#E6F1FB', text: '#0C447C', border: '#378ADD' },
+            transitional: { id: 'transitional', label: 'Transitional', bg: '#EAF3DE', text: '#27500A', border: '#639922' },
+            inert: { id: 'inert', label: 'Inert (low Sg)', bg: '#F1EFE8', text: '#444441', border: '#888780' },
+            deficit: { id: 'deficit', label: 'Snug-deficit', bg: '#FCEBEB', text: '#791F1F', border: '#A32D2D' }
+        };
 
-  .pt-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-  }
+        const App = () => {
+            const [selected, setSelected] = React.useState(null);
+            const [filter, setFilter] = React.useState(null);
 
-  .pt-title-block h1 {
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--color-text-primary);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .pt-title-block p {
-    font-size: 11px;
-    color: var(--color-text-secondary);
-    margin-top: 2px;
-  }
+            const toggleFilter = (catId) => {
+                setFilter(filter === catId ? null : catId);
+                setSelected(null);
+            };
 
-  .pt-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 12px;
-    align-items: center;
-  }
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 10px;
-    color: var(--color-text-secondary);
-  }
-  .legend-dot {
-    width: 10px; height: 10px;
-    border-radius: 2px;
-    flex-shrink: 0;
-  }
+            const gridCells = Array(5 * 18).fill(null);
+            ELEMENTS.forEach(el => {
+                const idx = ((el.row - 1) * 18) + (el.col - 1);
+                gridCells[idx] = el;
+            });
 
-  .pt-grid {
-    display: grid;
-    grid-template-columns: repeat(18, 1fr);
-    gap: 3px;
-    min-width: 600px;
-  }
+            return (
+                <div className="max-w-6xl mx-auto flex flex-col gap-6">
+                    <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-stone-200 pb-4">
+                        <div>
+                            <h1 className="text-2xl font-semibold tracking-tight text-stone-800">Snug Periodic Table</h1>
+                            <p className="text-sm text-stone-500 font-medium">Scones, P. (2026) · Cozy Nature, Vol. 12</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2 justify-end">
+                            {Object.values(CATS).map(cat => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => toggleFilter(cat.id)}
+                                    className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all ${filter === cat.id ? 'shadow-inner scale-95 ring-2 ring-offset-1 ring-stone-400' : 'hover:scale-105 shadow-sm'}`}
+                                    style={{ backgroundColor: cat.bg, color: cat.text, borderColor: filter === cat.id ? cat.text : cat.border + '60' }}
+                                >
+                                    {cat.label}
+                                </button>
+                            ))}
+                            {filter && (
+                                <button onClick={() => setFilter(null)} className="px-3 py-1 text-xs font-semibold rounded-full bg-stone-200 text-stone-600 hover:bg-stone-300 transition-colors">
+                                    Clear Filter
+                                </button>
+                            )}
+                        </div>
+                    </header>
 
-  .el {
-    aspect-ratio: 1;
-    border-radius: 4px;
-    padding: 4px 3px 3px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    position: relative;
-    border: 1px solid transparent;
-    transition: transform 0.12s, box-shadow 0.12s;
-  }
-  .el:hover {
-    transform: scale(1.12);
-    z-index: 10;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-  }
-  .el.selected {
-    transform: scale(1.08);
-    z-index: 9;
-  }
-  .el-num {
-    font-size: 7px;
-    font-weight: 400;
-    opacity: 0.75;
-    align-self: flex-start;
-    line-height: 1;
-  }
-  .el-sym {
-    font-size: 17px;
-    font-weight: 500;
-    line-height: 1;
-    margin-top: 1px;
-  }
-  .el-name {
-    font-size: 6px;
-    font-weight: 400;
-    opacity: 0.8;
-    text-align: center;
-    line-height: 1.2;
-    margin-top: 1px;
-  }
-  .el-sg {
-    font-size: 6px;
-    opacity: 0.6;
-    margin-top: 1px;
-  }
-  .el.empty {
-    opacity: 0;
-    pointer-events: none;
-    cursor: default;
-  }
-  .el.gap-label {
-    opacity: 0;
-    pointer-events: none;
-  }
+                    <div className="w-full overflow-x-auto hide-scrollbar">
+                        <div className="pt-grid">
+                            {gridCells.map((el, i) => {
+                                if (!el) return <div key={i} className="aspect-square"></div>;
+                                
+                                const catStyle = CATS[el.cat];
+                                const isSelected = selected?.n === el.n;
+                                const isDimmed = filter && filter !== el.cat;
 
-  /* category color schemes */
-  .cat-feline   { background: #FBEAF0; border-color: #D4537E40; color: #72243E; }
-  .cat-wool     { background: #EEEDFE; border-color: #7F77DD40; color: #3C3489; }
-  .cat-thermal  { background: #FAECE7; border-color: #D85A3040; color: #712B13; }
-  .cat-wood     { background: #FAEEDA; border-color: #BA751740; color: #633806; }
-  .cat-textile  { background: #E1F5EE; border-color: #1D9E7540; color: #085041; }
-  .cat-ambient  { background: #E6F1FB; border-color: #378ADD40; color: #0C447C; }
-  .cat-inert    { background: #F1EFE8; border-color: #88878040; color: #444441; }
-  .cat-deficit  { background: #FCEBEB; border-color: #A32D2D40; color: #791F1F; }
-  .cat-transitional { background: #EAF3DE; border-color: #63992240; color: #27500A; }
+                                return (
+                                    <div
+                                        key={el.n}
+                                        onClick={() => setSelected(isSelected ? null : el)}
+                                        className={`el-cell ${isSelected ? 'selected' : ''} ${isDimmed ? 'el-dim' : ''}`}
+                                        style={{ backgroundColor: catStyle.bg, color: catStyle.text, borderColor: isSelected ? '#1c1917' : catStyle.border + '40' }}
+                                    >
+                                        <span className="absolute top-1 left-1 text-[9px] opacity-70 font-medium leading-none">{el.n}</span>
+                                        <span className="text-lg font-bold leading-none mt-1">{el.sym}</span>
+                                        <span className="text-[8px] opacity-80 text-center leading-[1.1] mt-1 px-0.5 truncate w-full">{el.name}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
 
-  @media (prefers-color-scheme: dark) {
-    .cat-feline   { background: #4B1528; border-color: #D4537E60; color: #F4C0D1; }
-    .cat-wool     { background: #26215C; border-color: #7F77DD60; color: #CECBF6; }
-    .cat-thermal  { background: #4A1B0C; border-color: #D85A3060; color: #F5C4B3; }
-    .cat-wood     { background: #412402; border-color: #BA751760; color: #FAC775; }
-    .cat-textile  { background: #04342C; border-color: #1D9E7560; color: #9FE1CB; }
-    .cat-ambient  { background: #042C53; border-color: #378ADD60; color: #B5D4F4; }
-    .cat-inert    { background: #2C2C2A; border-color: #88878060; color: #D3D1C7; }
-    .cat-deficit  { background: #501313; border-color: #A32D2D60; color: #F7C1C1; }
-    .cat-transitional { background: #173404; border-color: #63992260; color: #C0DD97; }
-  }
+                    <div className="bg-white border border-stone-200 rounded-xl p-6 min-h-[160px] shadow-sm flex flex-col justify-center transition-all">
+                        {selected ? (
+                            <div className="flex flex-col md:flex-row gap-8 items-start">
+                                <div 
+                                    className="flex flex-col items-center justify-center rounded-lg p-6 min-w-[120px] shadow-sm border"
+                                    style={{ backgroundColor: CATS[selected.cat].bg, color: CATS[selected.cat].text, borderColor: CATS[selected.cat].border + '40' }}
+                                >
+                                    <span className="text-5xl font-bold mb-1">{selected.sym}</span>
+                                    <span className="text-sm font-medium">Sg-{selected.n}</span>
+                                </div>
+                                <div className="flex-1 space-y-3">
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-stone-800">{selected.name}</h2>
+                                        <div className="flex items-center gap-3 text-sm text-stone-500 mt-1 font-mono">
+                                            <span>Density: {selected.sg} Sg·cm⁻³</span>
+                                            <span>•</span>
+                                            <span>Confidence: {selected.conf}</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-stone-600 leading-relaxed text-sm">{selected.desc}</p>
+                                    <div className="flex flex-wrap gap-2 pt-2">
+                                        {selected.props.map((prop, idx) => (
+                                            <span key={idx} className="bg-stone-100 border border-stone-200 text-stone-600 px-2 py-1 rounded text-xs font-medium">
+                                                {prop}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center text-stone-400 italic">
+                                Select an element from the grid to examine its Snug properties.
+                            </div>
+                        )}
+                    </div>
+                    
+                    <footer className="text-right text-xs text-stone-400 font-mono mt-4 border-t border-stone-200 pt-4">
+                        κ = 0.618 ± 0.04 · Snug unit: Sg (dimensionless, positive definite) · G_L = 6.674 × 10⁻¹¹ Sg·m·kg⁻²
+                    </footer>
+                </div>
+            );
+        };
 
-  /* Info panel */
-  .info-panel {
-    margin-top: 1.25rem;
-    border: 0.5px solid var(--color-border-secondary);
-    border-radius: var(--border-radius-lg);
-    padding: 1rem 1.25rem;
-    background: var(--color-background-secondary);
-    min-height: 120px;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 1rem;
-    align-items: start;
-  }
-  .info-big {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-  }
-  .info-big-sym {
-    font-size: 48px;
-    font-weight: 500;
-    line-height: 1;
-  }
-  .info-big-num {
-    font-size: 12px;
-    color: var(--color-text-secondary);
-  }
-  .info-big-cat {
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    margin-top: 4px;
-  }
-  .info-right {}
-  .info-fullname {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--color-text-primary);
-    margin-bottom: 2px;
-  }
-  .info-sg {
-    font-size: 12px;
-    color: var(--color-text-secondary);
-    margin-bottom: 6px;
-    font-family: var(--font-mono, monospace);
-  }
-  .info-desc {
-    font-size: 13px;
-    color: var(--color-text-secondary);
-    line-height: 1.6;
-  }
-  .info-props {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 8px;
-  }
-  .prop-tag {
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 10px;
-    border: 0.5px solid var(--color-border-secondary);
-    color: var(--color-text-secondary);
-    background: var(--color-background-primary);
-  }
-  .info-placeholder {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-text-tertiary);
-    font-size: 13px;
-    font-style: italic;
-    min-height: 100px;
-  }
-  .cushion-const {
-    margin-top: 0.75rem;
-    font-size: 11px;
-    color: var(--color-text-tertiary);
-    text-align: right;
-  }
-  .period-label {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding-right: 4px;
-    font-size: 9px;
-    color: var(--color-text-tertiary);
-    font-weight: 400;
-  }
-  .group-label {
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    padding-bottom: 3px;
-    font-size: 9px;
-    color: var(--color-text-tertiary);
-  }
-</style>
-
-<div class="pt-wrap">
-  <div class="pt-header">
-    <div class="pt-title-block">
-      <h1>Snug Periodic Table</h1>
-      <p>Scones, P. (2026) · Cozy Nature, Vol. 12 · DOI 10.1038/cn.2026.0012</p>
-    </div>
-    <div class="pt-legend">
-      <div class="legend-item"><div class="legend-dot" style="background:#D4537E"></div>Feline group</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#7F77DD"></div>Wool & fibre</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#D85A30"></div>Thermal series</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#BA7517"></div>Wood & organic</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>Textile & soft</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div>Ambient</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#639922"></div>Transitional</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#888780"></div>Inert (low Sg)</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#A32D2D"></div>Snug-deficit</div>
-    </div>
-  </div>
-
-  <div style="overflow-x: auto;">
-    <div class="pt-grid" id="pt-grid"></div>
-  </div>
-
-  <div class="info-panel" id="info-panel">
-    <div class="info-placeholder">Select an element to view its Snug properties</div>
-  </div>
-
-  <div class="cushion-const">κ = 0.618 ± 0.04 · Snug unit: Sg (dimensionless, positive definite) · G<sub>L</sub> = 6.674 × 10⁻¹¹ Sg·m·kg⁻²</div>
-</div>
-
-<script>
-const ELEMENTS = [
-  // PERIOD 1 — Feline Group (row 1, cols 1-2, then gap, 17-18)
-  { n:1,  sym:'Fc', name:'Felis catus',      cat:'feline',      sg:'2.1 × 10⁹',  conf:'Very confident', desc:'The most potent passive Snug aggregator yet discovered. Draws ambient coziness from surroundings and concentrates it into a dense somatic reservoir. Emits warmth, purring, and the Languid Arrangement Effect. Control groups decline to cooperate, which is itself confirmatory.', props:['Languid Arrangement Effect','Passive aggregator','Purr-mediated emission','Highly selective'], col:1, row:1 },
-  { n:2,  sym:'Kn', name:'Kitten',           cat:'feline',      sg:'3.4 × 10⁹',  conf:'Very confident', desc:'Exhibits elevated Snug density relative to adult specimens, likely due to higher surface-area-to-volume ratio and disproportionate softness. The additional density decays toward adult levels at approximately 6 months. Further study needed; all attempts at controlled observation have resulted in immediate loss of scientific objectivity.', props:['Peak density juvenile','Decay curve ~6mo','Paw-to-body ratio anomaly'], col:2, row:1 },
-  { n:3,  sym:'Cf', name:'Sleeping cat',     cat:'feline',      sg:'4.7 × 10⁹',  conf:'Quite sure indeed', desc:'The dormant phase of Felis catus exhibits maximal Snug density. When fully curled and warm, the sleeping cat achieves what Scones terms the "Bun Configuration" — a near-perfect Snug sphere that measurably increases ambient contentment within a 1.2m radius. Do not disturb.', props:['Bun Configuration','1.2m ambient field','Do not disturb'], col:3, row:1 },
-
-  // gap col 4-14 row 1
-  { n:4,  sym:'Cs', name:'Cashmere',         cat:'wool',        sg:'9.1 × 10⁸',  conf:'Quite sure indeed', desc:'Occupies a position of particular Snug significance. The finest wool fibre class known to science, cashmere achieves its remarkable Snug density through a combination of extreme softness, thermal retention, and what the author terms "aspirational warmth" — the coziness contributed by the object\'s perceived value.', props:['Finest fibre class','Aspirational warmth','Age-improves'], col:15, row:1 },
-  { n:5,  sym:'Wl', name:'Wool blanket (unwashed)', cat:'wool', sg:'8.4 × 10⁸',  conf:'Quite sure', desc:'The canonical Snug-active textile. Unwashed specimens exhibit higher density than laundered ones, consistent with the hypothesis that ambient Snugs adhere to lanolin. Higher still after sustained use. Functions by concentrating previously diffuse Snug fields into a localised receptor region — not by trapping air, as conventional physics incorrectly proposes.', props:['Lanolin-Snug adhesion','Use-improves','Receptor concentration'], col:16, row:1 },
-  { n:6,  sym:'Fl', name:'Fleece',           cat:'wool',        sg:'6.2 × 10⁸',  conf:'Fairly certain', desc:'Synthetic Snug-active fibre. Achieves respectable density through pile depth rather than lanolin content. The absence of natural origin slightly reduces ambient contentment compared to wool, but its thermal performance and tactile immediacy compensate. Particularly effective in Bun Configuration with a cat.', props:['Synthetic pile','Thermal compensator','Good cat-synergy'], col:17, row:1 },
-  { n:7,  sym:'Mo', name:'Mohair',           cat:'wool',        sg:'7.8 × 10⁸',  conf:'Fairly certain', desc:'Angora goat fibre. Exhibits a light, halo-like Snug field that extends several centimetres beyond the physical textile boundary. The halo effect is hypothesised to result from the fibre\'s natural loft, which creates a low-density Fluff interface zone that eases light into the fabric at a comfortable angle.', props:['Halo Snug field','Fluff interface zone','Loft-active'], col:18, row:1 },
-
-  // PERIOD 2 — Thermal series row 2
-  { n:8,  sym:'Tc', name:'Hot tea (porcelain)', cat:'thermal',  sg:'5.7 × 10⁸',  conf:'Fairly certain', desc:'The archetypal warm vessel. Snug density decays with cooling — a time-dependent property unique to the thermal series. The porcelain mug is the canonical delivery medium; paper cups exhibit approximately 40% reduced Snug density, attributed to the absence of thermal memory. The act of wrapping both hands around a full mug constitutes a micro-Hug event.', props:['Time-dependent decay','Micro-Hug delivery','Porcelain-specific'], col:1, row:2 },
-  { n:9,  sym:'Ch', name:'Hot chocolate',    cat:'thermal',     sg:'6.9 × 10⁸',  conf:'Quite sure', desc:'Exceeds plain tea in Snug density by a significant margin, attributed to the combined thermal and gustatory Snug contribution of dissolved cocoa solids. Whipped cream topping constitutes a Snug bonus of approximately 0.4 × 10⁸ Sg/cm³, though this dissipates rapidly. Marshmallow addition is under investigation.', props:['Cocoa-solid amplification','Cream bonus','Gustatory Snug'], col:2, row:2 },
-  { n:10, sym:'Sp', name:'Soup (old wood bowl)', cat:'thermal', sg:'7.2 × 10⁸',  conf:'Quite sure indeed', desc:'Achieves exceptional Snug density through the synergistic combination of thermal content and organic vessel. The author notes that soup is "likely to occupy a position of particular significance" in the Snug periodic table. The old wood bowl is load-bearing: serving identical soup in a modern white bowl reduces density by approximately 35%.', props:['Vessel-dependent','Old-wood synergy','High thermal mass'], col:3, row:2 },
-  { n:11, sym:'Bk', name:'Baked goods (fresh)', cat:'thermal', sg:'5.1 × 10⁸',  conf:'Fairly certain', desc:'Warm baked goods in a kitchen setting — bread, scones, or biscuits — exhibit Snug density concentrated in a diffuse olfactory field that extends well beyond the physical object. The smell of baking is the visible surface of an ambient Snug gradient. Cooling reduces density to approximately 30% of peak within one hour.', props:['Olfactory Snug field','Diffuse emission','Rapid decay curve'], col:4, row:2 },
-  { n:12, sym:'Fi', name:'Fireplace',        cat:'thermal',     sg:'8.8 × 10⁸',  conf:'Very confident', desc:'Highest Snug density in the thermal series. The fireplace functions as a Snug field generator rather than a mere heat source, projecting a radial ambient contentment gradient that exceeds metabolic warming effects by a factor the author estimates at "quite a lot." Most effective when accompanied by wool blanket and sleeping cat. Wood-burning exceeds gas; gas exceeds electric.', props:['Radial Snug gradient','Wood > gas > electric','Amplifies adjacent elements'], col:5, row:2 },
-
-  // gap
-  { n:13, sym:'Rn', name:'Rain (outside)',   cat:'ambient',     sg:'6.3 × 10⁸',  conf:'Fairly certain', desc:'A critical contextual element. Rain on a window — observed from inside — contributes substantially to indoor Snug density by creating a sharp environmental contrast gradient. The Snug is not in the rain; it is in the boundary between the rain and the not-rain. This is among the first documented examples of Snug arising from relational rather than intrinsic properties.', props:['Contrast gradient','Relational Snug','Window-mediated'], col:11, row:2 },
-  { n:14, sym:'Fg', name:'Fog',              cat:'ambient',     sg:'4.2 × 10⁸',  conf:'Fairly certain', desc:'Dense atmospheric water vapour contributes to ambient Snug density by softening the visual boundary between objects. Fog increases perceived Fluff density at ground level, which slows light into a more comfortable configuration and softens architectural edges. Morning fog with tea and a warm window constitutes a documented Snug event.', props:['Boundary-softening','Ground-level Fluff','Edge-reduction'], col:12, row:2 },
-  { n:15, sym:'Tw', name:'Twilight',         cat:'ambient',     sg:'5.8 × 10⁸',  conf:'Quite sure', desc:'The liminal light state between day and dark. Photons entering elevated Fluff density near the horizon decelerate (τ → 1) and arrive at a comfortable angle, producing a warm, diffuse illumination with exceptionally low Snug-deficit frequency. Artificial twilight (dimmer switches, candles) partially replicates the effect; smart bulbs partially replicate partial replication.', props:['Fluff-decelerated photons','τ → 1 near horizon','Liminal state'], col:13, row:2 },
-  { n:16, sym:'Cd', name:'Candlelight',      cat:'ambient',     sg:'5.4 × 10⁸',  conf:'Quite sure', desc:'Flame-sourced light travels through locally elevated Fluff density before reaching the observer, producing a warm colour temperature and temporal variation. The flicker is not a flaw — it is evidence that light is finding its comfortable path through an inhomogeneous Fluff medium. Snuffing a candle produces a brief Snug deficit as the field collapses.', props:['Fluff-inhomogeneous path','Flicker = Fluff turbulence','Snuff-deficit noted'], col:14, row:2 },
-  { n:17, sym:'Sm', name:'Smoked wood',      cat:'wood',        sg:'3.9 × 10⁸',  conf:'Fairly certain', desc:'Wood processed by smoke exposure acquires additional Snug from the thermal history encoded in its grain. Smoked wood furniture carries a residual warmth that unsmoked wood does not. This is the first documented case of Snug-as-memory: the object\'s history contributing measurably to its current density field.', props:['Thermal memory','Snug-as-memory','Residual field'], col:15, row:2 },
-  { n:18, sym:'Ow', name:'Old wood',         cat:'wood',        sg:'4.5 × 10⁸',  conf:'Fairly certain', desc:'Aged timber, particularly in furniture or floorboards, exhibits Snug density that increases with age — a property unique among inorganic materials and shared only with cashmere among textiles. Old wood accumulates Snug from decades of thermal cycling, contact, and ambient contentment events. Antique wooden furniture exceeds modern equivalents by 200-300% in Snug density.', props:['Age-accumulating','Thermal cycle memory','Antique bonus'], col:16, row:2 },
-
-  // PERIOD 3 — Textile & soft row 3
-  { n:19, sym:'Ql', name:'Quilt',            cat:'textile',     sg:'5.9 × 10⁸',  conf:'Quite sure', desc:'A layered textile system exhibiting emergent Snug properties exceeding the sum of its constituent materials. The quilt achieves this through the acoustic insulation effect — sound dampening that reduces Snug-deficit frequency content and creates a stable ambient contentment environment. Patchwork quilts with familial origin exhibit additional Snug from provenance.', props:['Emergent properties','Acoustic insulation','Provenance bonus'], col:1, row:3 },
-  { n:20, sym:'Hn', name:'Handknit jumper',  cat:'textile',     sg:'6.8 × 10⁸',  conf:'Quite sure indeed', desc:'Surpasses commercially produced knitwear by a significant margin due to embedded maker-Snug — the ambient contentment contributed by the act of creation. Stitches contain a temporal density gradient (rows worked in winter carry higher density than summer rows). Cable patterns exhibit particularly high Snug-per-stitch ratios.', props:['Maker-Snug embedded','Temporal density gradient','Cable-pattern bonus'], col:2, row:3 },
-  { n:21, sym:'Sk', name:'Soft sock',        cat:'textile',     sg:'4.7 × 10⁸',  conf:'Fairly certain', desc:'Thick, soft socks constitute a foundational domestic Snug technology. The Snug contribution is disproportionate to surface area, suggesting a foot-specific Snug receptor system not present elsewhere in the body. The author recommends further anatomical investigation. Novelty patterning does not affect Snug density but may increase ambient contentment through aesthetic means.', props:['Foot-receptor system','Disproportionate density','Patterning-neutral'], col:3, row:3 },
-  { n:22, sym:'Pi', name:'Pillow (used)',    cat:'textile',     sg:'5.2 × 10⁸',  conf:'Fairly certain', desc:'A used pillow — particularly one with established head-conforming deformation — carries Snug density above that of a new pillow, consistent with the general principle that objects accumulate coziness through use. New pillows present an initial Snug deficit that resolves over approximately six weeks. Memory foam approximates this at approximately 60% efficiency.', props:['Use-accumulating','Deformation-Snug','Memory foam 60% proxy'], col:4, row:3 },
-  { n:23, sym:'Hd', name:'Hood (up)',        cat:'textile',     sg:'5.5 × 10⁸',  conf:'Fairly certain', desc:'The raised hood constitutes a portable micro-environment with significantly elevated ambient contentment. The acoustic dampening properties reduce external Snug-deficit signals and create a contained warmth field around the head. Drawstring hoods exhibit higher Snug density than fixed hoods, attributed to the intentionality of the sealing gesture.', props:['Portable micro-env','Acoustic dampening','Drawstring intentionality'], col:5, row:3 },
-  
-  // transitional group
-  { n:24, sym:'Bt', name:'Blanket fort',     cat:'transitional', sg:'7.7 × 10⁸', conf:'Very confident', desc:'A constructed environment formed by arranging textiles over furniture to create an enclosed space. Exhibits emergent Snug density far exceeding its constituent materials, attributed to spatial exclusion — the act of defining a boundary between inside and outside generates a sharp Snug gradient at the boundary surface. All ages exhibit elevated ambient contentment within.', props:['Spatial exclusion','Boundary gradient','Age-independent effect'], col:8, row:3 },
-  { n:25, sym:'Wn', name:'Window seat',      cat:'transitional', sg:'6.1 × 10⁸', conf:'Quite sure', desc:'A transitional element: architecturally interior but perceptually liminal. The window seat occupies the boundary between inside and outside, accessing the contrast gradient of rain/fog/twilight elements while retaining full interior thermal density. Cushion depth is a key variable — window seats with cushions under 4cm exhibit marked density reduction.', props:['Liminal position','Contrast gradient access','Cushion-depth sensitive'], col:9, row:3 },
-  { n:26, sym:'Nt', name:'Night train',      cat:'transitional', sg:'6.5 × 10⁸', conf:'Fairly certain', desc:'Long-distance night rail travel exhibits unexpectedly high Snug density, attributed to the combination of lateral motion, darkness, ambient mechanical sound, and the particular quality of light from passing signals. The author classifies this as a transitional element because the Snug exists only in transit — arrival terminates the field.', props:['Transit-dependent','Signal-light photons','Motion-induced Fluff'], col:10, row:3 },
-  { n:27, sym:'Lm', name:'Lamplight',        cat:'ambient',      sg:'4.9 × 10⁸', conf:'Fairly certain', desc:'A table or floor lamp with warm-spectrum bulb creates a localised Snug field that does not extend to ceiling height. The field boundary is the edge of the light cone — below this line, ambient contentment is measurably elevated; above it, the Snug density returns to background. Reading within the cone constitutes an optimal Snug harvesting configuration.', props:['Cone-bounded field','Reading-optimised','Spectrum-sensitive'], col:11, row:3 },
-  { n:28, sym:'Lb', name:'Library',          cat:'ambient',      sg:'5.6 × 10⁸', conf:'Quite sure', desc:'A room containing a substantial collection of books exhibits ambient Snug density exceeding the sum of individual volumes, attributed to the accumulated reading history embedded in the collection. Old paper contributes a characteristic olfactory Snug field (see: Old Paper, Sg-41). Libraries with wooden shelving achieve significantly higher density than metal-shelved equivalents.', props:['Collective reading field','Olfactory component','Wood-shelf dependent'], col:12, row:3 },
-
-  // inert group row 3
-  { n:29, sym:'Ec', name:'Empty office chair', cat:'inert',    sg:'1.2 × 10⁵',  conf:'Confident', desc:'The lowest Snug density recorded for any object in sustained domestic use. The empty office chair exhibits not active Snug deficit but a condition of Snug neutrality so thoroughgoing as to resist ambient accumulation. Recovery is slow. A cat sleeping on an office chair immediately raises its density by approximately 2.1 × 10⁹ Sg/cm³.', props:['Near-zero density','Slow recovery','Cat-reversal possible'], col:17, row:3 },
-  { n:30, sym:'Od', name:'Open downloads folder', cat:'inert', sg:'3.0 × 10³',  conf:'Fairly certain', desc:'An open Downloads folder in a digital environment exhibits the lowest Snug density of any commonly observed digital object, attributed to the chaotic and unresolved state of its contents. Density is highly variable and correlates inversely with time since last organisation. A tidy Downloads folder has not been successfully measured; the author suspects the act of tidying collapses the measurement.', props:['Highly variable','Chaos-correlated','Tidy state: unmeasured'], col:18, row:3 },
-
-  // PERIOD 4 — Snug-deficit row 4 and specialist materials
-  { n:31, sym:'Fl', name:'Fluorescent lighting', cat:'deficit', sg:'−4.2 × 10⁶', conf:'Confident', desc:'The only confirmed Snug-deficit material in the catalogue. Fluorescent lighting actively withdraws Snug from its environment, producing measurable ambient contentment reduction within 2m of any active tube. The deficit is proportional to tube length and flicker frequency. LED alternatives with warm colour temperature partially mitigate this but cannot fully restore lost Snug.', props:['Active Snug withdrawal','Flicker-frequency linked','LED-partial mitigation'], col:1, row:4 },
-  { n:32, sym:'Op', name:'Open-plan office', cat:'deficit',    sg:'−6.1 × 10⁶', conf:'Confident', desc:'A compound Snug-deficit environment formed by the interaction of fluorescent lighting, ergonomic chairs, absence of enclosure, and ambient productivity pressure. The deficit exceeds the sum of its components due to the social dynamics of visible busyness — the awareness of being observed removes the fundamental precondition for ambient contentment. No known remediation at scale.', props:['Compound deficit','Social pressure term','No known remediation'], col:2, row:4 },
-  { n:33, sym:'Rf', name:'Ring doorbell notification', cat:'deficit', sg:'−1.8 × 10⁶', conf:'Fairly certain', desc:'A sudden, unexpected alert in a previously stable ambient environment produces a spike Snug deficit event. The deficit is brief — typically 40-90 seconds — but disrupts the accumulation gradient of any ongoing Snug activity, requiring re-establishment from a lower baseline. In a blanket fort, this deficit can cause structural Snug collapse.', props:['Spike deficit','40-90s duration','Gradient disruption'], col:3, row:4 },
-  { n:34, sym:'Dm', name:'Deadline reminder', cat:'deficit',   sg:'−3.3 × 10⁶', conf:'Confident', desc:'A calendar or task notification referencing incomplete obligations produces a Snug deficit proportional to the urgency of the referenced task and inversely proportional to the time remaining. The deficit is unique in that its magnitude is not a property of the notification itself but of the state it reveals. Classified as a contextual Snug-deficit element.', props:['Contextual deficit','Urgency-proportional','State-revealing'], col:4, row:4 },
-
-  // gap
-  { n:35, sym:'Pv', name:'Patchwork velvet', cat:'textile',    sg:'7.4 × 10⁸',  conf:'Quite sure', desc:'Velvet exhibits unusually directional Snug density: significantly higher when stroked with the nap than against it. This directional property (pile polarity) is unique to the textile series and suggests Snug may be a vector quantity in some materials. Patchwork velvet in multiple colours shows constructive Snug interference at colour boundaries.', props:['Pile polarity','Vector Snug','Constructive interference'], col:9, row:4 },
-  { n:36, sym:'Ln', name:'Linen (washed many times)', cat:'textile', sg:'4.8 × 10⁸', conf:'Fairly certain', desc:'Unlike most textiles, linen exhibits increasing Snug density with each wash cycle — up to approximately 40 washes, after which it reaches a density plateau. This makes well-worn linen sheets among the most reliable long-term Snug investments in the textile series. High-thread-count new linen sheets exhibit paradoxically lower density than their worn equivalents.', props:['Wash-accumulating','40-cycle plateau','Paradox: new < worn'], col:10, row:4 },
-  { n:37, sym:'Ha', name:'Hammock',          cat:'transitional', sg:'5.3 × 10⁸', conf:'Fairly certain', desc:'Exhibits a Snug density dependent on ambient conditions to an unusual degree. In warm, still, shaded outdoor environments, the hammock achieves peak density through the synthesis of natural light, textile contact, and the particular quality of motion that the author classifies as "intentional sway." In cold or windy conditions, density collapses to near-zero.', props:['Condition-dependent','Intentional sway','Outdoor-optimised'], col:11, row:4 },
-  { n:38, sym:'Bn', name:'Bath (very warm)',  cat:'thermal',    sg:'6.4 × 10⁸',  conf:'Quite sure', desc:'Achieves Snug density through total immersive thermal contact — the only common domestic activity involving complete surface coverage. The Snug field extends slightly beyond the water surface (the "steam halo"), contributing an ambient component. A book and a cup of tea in proximity elevate the total event Snug to approximately 7.1 × 10⁸ Sg, approaching the fireplace event category.', props:['Total contact','Steam halo','Book+tea synergy'], col:12, row:4 },
-  { n:39, sym:'Op', name:'Old paper',        cat:'wood',       sg:'3.6 × 10⁸',  conf:'Fairly certain', desc:'Aged paper — found in old books, letters, or journals — exhibits an olfactory Snug field produced by the chemical decomposition of cellulose into compounds including furfural and benzaldehyde. This constitutes the clearest known case of Snug encoded in chemical state. The Snug is proportional to paper age up to approximately 100 years; older paper shows density plateau.', props:['Chemical Snug encoding','Furfural-mediated','100yr plateau'], col:13, row:4 },
-  { n:40, sym:'Aw', name:'Autumn walk',      cat:'ambient',    sg:'5.0 × 10⁸',  conf:'Fairly certain', desc:'A category of ambient Snug arising from the interaction of colour temperature, particulate light scatter, thermal contrast, and the acoustic properties of dry leaves. No individual component achieves this density alone; the Snug is fully emergent. The author notes this as the strongest evidence that coziness arises from the relationship between elements, not from the elements themselves.', props:['Fully emergent','Multi-factor interaction','Relational Snug'], col:14, row:4 },
-
-  // PERIOD 5 — Rare and theoretical row 5
-  { n:41, sym:'Pr', name:'Purring (at source)', cat:'feline',  sg:'2.9 × 10⁹',  conf:'Quite sure indeed', desc:'The acoustic emission of a purring cat constitutes a distinct Snug element from the cat itself. Measured at source — with the vibrating animal in direct physical contact — purring contributes a resonant Snug field in the 25-150Hz range that the author hypothesises directly interfaces with the body\'s own Snug receptors. Remote purring (recorded or distant) contributes approximately 15% of the contact value.', props:['Resonant coupling','25-150Hz range','Contact-dependent'], col:1, row:5 },
-  { n:42, sym:'Mm', name:'Morning (first light)', cat:'ambient', sg:'4.6 × 10⁸', conf:'Fairly certain', desc:'The first light of a clear morning, observed from bed, constitutes a Snug event distinct from later daylight. The photons arrive at a low angle through elevated ground-level Fluff, producing a warm, gentle illumination with high Snug-active spectral content. The decision to remain in bed constitutes a Snug-positive action whose density contribution is not yet quantified but is suspected to be substantial.', props:['Low-angle Fluff photons','Bed-decision bonus','Spectral Snug'], col:2, row:5 },
-  { n:43, sym:'Ss', name:'Sunday afternoon',   cat:'ambient',  sg:'5.5 × 10⁸',  conf:'Quite sure', desc:'A temporal Snug element — the only entry in the catalogue defined by time rather than material. Sunday afternoon exhibits elevated ambient contentment arising from the temporal position between completed and anticipated obligations, combined with culturally embedded permission structures for rest. The Snug is not in any object but in the relationship between the moment and its surrounding time.', props:['Temporal element','Permission-structure Snug','Obligation-free zone'], col:3, row:5 },
-  { n:44, sym:'Hg', name:'The Big Hug',       cat:'feline',   sg:'∞ (theoretical)', conf:'Quite sure indeed', desc:'The predicted terminal state of the universe at t → ∞, when Snug distribution variance approaches zero and every point in space holds exactly the same quantity of Snug. Not cold — warm, uniform, and at rest. Ω_BigHug = lim(t→∞)[Snug distribution variance] → 0. The universe has been settling toward this since the first sigh of the Big Bang.', props:['Terminal cosmological state','Maximal entropy (Snug)','Not the Heat Death'], col:4, row:5 },
-  { n:45, sym:'Gs', name:'Good conversation',  cat:'ambient',  sg:'6.0 × 10⁸',  conf:'Fairly certain', desc:'Interpersonal Snug arising from sustained, comfortable dialogue. Not all conversation is Snug-active; only conversations with low temporal pressure, high mutual curiosity, and an ambient willingness for tangents. The Snug field is disrupted by any reference to what time it is. Field strength correlates with duration but not proportionally — brief moments of genuine understanding contribute disproportionately.', props:['Interpersonal Snug','Tangent-tolerant','Anti-clock property'], col:5, row:5 },
-  
-  { n:46, sym:'Np', name:'Neptune (contented)', cat:'inert',   sg:'2.1 × 10⁴',  conf:'Fairly certain', desc:'Neptune is simply not ready to be closer to the Sun and should not be pressured about it. Under the Law of Social Orbit, Neptune has found its optimal arrangement — cold, quiet, and left alone. This is not a Snug deficit; it is a legitimate alternative expression of orbital comfort. The Law does not require all bodies to seek warmth, only that they seek their own optimal arrangement.', props:['Optimal arrangement found','Cold comfort','Do not pressure'], col:11, row:5 },
-  { n:47, sym:'Fl', name:'Fluff (medium)',     cat:'ambient',  sg:'variable',    conf:'Fairly certain', desc:'The pervasive medium hypothesised to govern light propagation via resistive settling rather than wave propagation through vacuum. Not detectable by conventional instruments designed for fast-moving things. Acts on things moving slowly, or on things that would prefer to arrive gradually. τ → 1 near the horizon; τ → 0 in fluorescent-lit offices.', props:['Pervasive medium','Speed-selective','τ near horizon = 1'], col:12, row:5 },
-  { n:48, sym:'Sg', name:'Snug (fundamental)', cat:'wool',     sg:'1 (by definition)', conf:'Quite sure indeed', desc:'The fundamental, indivisible unit of coziness. Positive definite and dimensionless. Cannot be created or destroyed — only relocated, stored, or temporarily mislaid. A Snug in motion is a photon. A Snug at rest is ambient warmth. The blanket concentrates previously diffuse Snugs into a localised receptor region. A half-Snug has never been detected; the author does not believe it would be comfortable.', props:['Indivisible','Conserved','Photon-equivalent in transit'], col:13, row:5 },
-];
-
-const CATS = {
-  feline: { label: 'Feline group', color: '#D4537E' },
-  wool: { label: 'Wool & fibre', color: '#7F77DD' },
-  thermal: { label: 'Thermal series', color: '#D85A30' },
-  wood: { label: 'Wood & organic', color: '#BA7517' },
-  textile: { label: 'Textile & soft', color: '#1D9E75' },
-  ambient: { label: 'Ambient', color: '#378ADD' },
-  transitional: { label: 'Transitional', color: '#639922' },
-  inert: { label: 'Inert (low Sg)', color: '#888780' },
-  deficit: { label: 'Snug-deficit', color: '#A32D2D' },
-};
-
-const ROWS = 5;
-const COLS = 18;
-let selected = null;
-
-function buildGrid() {
-  const grid = document.getElementById('pt-grid');
-  
-  // Map elements by position
-  const elMap = {};
-  ELEMENTS.forEach(el => {
-    elMap[`${el.row},${el.col}`] = el;
-  });
-
-  for (let r = 1; r <= ROWS; r++) {
-    for (let c = 1; c <= COLS; c++) {
-      const el = elMap[`${r},${c}`];
-      const cell = document.createElement('div');
-      if (el) {
-        cell.className = `el cat-${el.cat}`;
-        cell.innerHTML = `<span class="el-num">${el.n}</span><span class="el-sym">${el.sym}</span><span class="el-name">${el.name.replace(/\s+/g,' ').length > 12 ? el.name.split(' ').slice(0,2).join(' ') : el.name}</span><span class="el-sg">${el.sg.split(' ')[0]}</span>`;
-        cell.addEventListener('click', () => selectEl(el, cell));
-      } else {
-        cell.className = 'el empty';
-      }
-      grid.appendChild(cell);
-    }
-  }
-}
-
-function selectEl(el, cellEl) {
-  if (selected === el) {
-    selected = null;
-    cellEl.classList.remove('selected');
-    showPlaceholder();
-    return;
-  }
-  document.querySelectorAll('.el.selected').forEach(e => e.classList.remove('selected'));
-  cellEl.classList.add('selected');
-  selected = el;
-  showInfo(el);
-}
-
-function showPlaceholder() {
-  const panel = document.getElementById('info-panel');
-  panel.innerHTML = '<div class="info-placeholder">Select an element to view its Snug properties</div>';
-  panel.style.gridTemplateColumns = '1fr';
-}
-
-function showInfo(el) {
-  const panel = document.getElementById('info-panel');
-  const cat = CATS[el.cat];
-  panel.style.gridTemplateColumns = 'auto 1fr';
-  panel.innerHTML = `
-    <div class="info-big">
-      <div class="info-big-sym cat-${el.cat}" style="width:72px;height:72px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:36px;">${el.sym}</div>
-      <div class="info-big-num">Sg-${el.n}</div>
-      <div class="info-big-cat cat-${el.cat}" style="border:0.5px solid ${cat.color}40;">${cat.label}</div>
-    </div>
-    <div class="info-right">
-      <div class="info-fullname">${el.name}</div>
-      <div class="info-sg">Snug density: ${el.sg} Sg·cm⁻³ · Confidence: ${el.conf}</div>
-      <div class="info-desc">${el.desc}</div>
-      <div class="info-props">${el.props.map(p => `<span class="prop-tag">${p}</span>`).join('')}</div>
-    </div>
-  `;
-}
-
-buildGrid();
-showPlaceholder();
-</script>
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
