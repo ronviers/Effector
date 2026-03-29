@@ -1,6 +1,11 @@
 """
 State Bus — Local key-value world state with SHA-256 snapshot hashing.
 Append-only delta log. Thread-safe.
+
+IEP-A3 addition: serialize() produces a deterministic, flat string
+representation of state suitable for embedding-model input. Volatile
+keys (timestamps, poll intervals) are excluded so that cosmetic churn
+in the telemetry stream does not shift the embedding unnecessarily.
 """
 
 from __future__ import annotations
@@ -11,6 +16,14 @@ import threading
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Callable
+
+
+# Keys whose values change every poll cycle and carry no semantic weight
+# for the purposes of world-model comparison.  Add to this set as needed.
+_DEFAULT_VOLATILE_KEYS: frozenset[str] = frozenset({
+    "telemetry.timestamp",
+    "telemetry.interval_s",
+})
 
 
 class StateBus:
@@ -52,6 +65,47 @@ class StateBus:
         """Check if current world state matches a previously issued hash."""
         current_hash, _, _ = self.snapshot(keys)
         return current_hash == expected_hash
+
+    # ─── IEP-A3: Deterministic serialization ───────────────────────────────
+
+    def serialize(
+        self,
+        keys: list[str] | None = None,
+        volatile_keys: frozenset[str] | None = None,
+    ) -> str:
+        """
+        Produce a deterministic, human-readable flat string of the world state
+        suitable as input to an embedding model.
+
+        Volatile keys (timestamps, interval counters) are excluded by default
+        so that cosmetic churn in the telemetry stream does not shift the
+        embedding unnecessarily.  The caller may supply a custom volatile_keys
+        set to override the module default.
+
+        Output format (sorted, pipe-delimited):
+            "cpu.freq.mhz: 3600.0 | cpu.percent.total: 18.3 | ..."
+
+        Args:
+            keys:          If supplied, only these keys are included before
+                           volatile filtering.  None means the full state.
+            volatile_keys: Set of key names to exclude.  Defaults to
+                           _DEFAULT_VOLATILE_KEYS.
+
+        Returns:
+            A UTF-8-safe string ready for embedding-model ingestion.
+        """
+        excluded = volatile_keys if volatile_keys is not None else _DEFAULT_VOLATILE_KEYS
+
+        with self._lock:
+            state_slice = self.read(keys)
+
+        # Remove volatile entries, then sort for determinism
+        stable = {k: v for k, v in state_slice.items() if k not in excluded}
+        parts = [
+            f"{k}: {v}"
+            for k, v in sorted(stable.items())
+        ]
+        return " | ".join(parts)
 
     # ─── Write (IEP-acknowledged only) ─────────────────────────────────────
 
