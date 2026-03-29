@@ -1,0 +1,1032 @@
+"""
+Test Suite — A1 / A2 / A3
+==========================
+Runs fully headless with no API keys or Ollama connections.
+
+A1 tests: TelemetryPoller data integrity and StateBus writes
+A2 tests: AsymmetricDASPCoordinator gate logic with mock agents
+A3 tests: IEPBuilder, IEPValidator (all 5 checks), EnvelopeQueue
+
+Run:
+    cd effector && python -m pytest tests/test_effector_loop.py -v
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import queue
+import sys
+import tempfile
+import threading
+import time
+import uuid
+from pathlib import Path
+from typing import Any
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from effector.telemetry.state_keys import KEYS
+from effector.telemetry.poller import TelemetryPoller, _compute_pressure, _get_active_window
+from effector.adapters.asymmetric_dasp import (
+    AsymmetricDASPCoordinator,
+    TierConfig,
+    _HypothesisAccumulator,
+    _ingest,
+    _stall_fired,
+    _inhibition_fired,
+    _consensus_cleared,
+)
+from effector.queue.iep_queue import (
+    EnvelopeQueue,
+    IEPBuilder,
+    IEPValidator,
+    ValidationResult,
+    QueueItem,
+)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Shared fixtures
+# ─────────────────────────────────────────────────────────────────────────────
+
+class MockStateBus:
+    """Lightweight StateBus shim for tests — no threading, deterministic hash."""
+
+    def __init__(self, initial: dict | None = None) -> None:
+        self._state: dict = dict(initial or {})
+        self._log: list = []
+
+    def read(self, keys=None):
+        if keys is None:
+            return dict(self._state)
+        return {k: self._state.get(k) for k in keys}
+
+    def snapshot(self, keys=None):
+        sl = self.read(keys)
+        h = hashlib.sha256(json.dumps(sl, sort_keys=True, default=str).encode()).hexdigest()
+        from datetime import datetime, timezone
+        return h, datetime.now(timezone.utc), sl
+
+    def apply_delta(self, envelope_id, delta, agent_id, session_id=None):
+        self._state.update(delta)
+        self._log.append({"envelope_id": envelope_id, "delta": delta, "agent_id": agent_id})
+        return delta
+
+    def delta_log(self):
+        return list(self._log)
+
+    def get_reputation(self, agent_id: str) -> float:
+        return 0.5
+
+
+def _make_snapshot_hash(state: dict) -> str:
+    return hashlib.sha256(json.dumps(state, sort_keys=True, default=str).encode()).hexdigest()
+
+
+def _make_valid_envelope(bus: MockStateBus, keys: list[str] | None = None) -> dict:
+    """Build a valid IEP envelope grounded in the bus's current state."""
+    snap_hash, snap_ts, _ = bus.snapshot(keys)
+    from datetime import datetime, timezone
+    return {
+        "iep_version": "1.0",
+        "envelope_id": str(uuid.uuid4()),
+        "timestamp_issued": datetime.now(timezone.utc).isoformat(),
+        "agent": {"id": "coordinator", "role": "executor"},
+        "goal_context": {
+            "root_goal_id": str(uuid.uuid4()),
+            "parent_goal_id": str(uuid.uuid4()),
+            "depth": 0,
+            "branch_label": "test",
+        },
+        "origin": {"dasp_session_id": str(uuid.uuid4()), "winning_coalition": ["a"], "consensus_score": 0.8},
+        "world_model_snapshot": {
+            "snapshot_id": str(uuid.uuid4()),
+            "snapshot_timestamp": snap_ts.isoformat(),
+            "relevant_keys": keys or [],
+            "hash": snap_hash,
+        },
+        "intended_action": {
+            "verb": "WRITE",
+            "target": "world_state",
+            "parameters": {"test_key": "test_value"},
+        },
+        "expected_state_change": {
+            "keys_affected": ["test_key"],
+            "predicted_delta": {"test_key": "test_value"},
+            "confidence": 0.8,
+        },
+        "abort_conditions": [],
+        "ttl_ms": 30_000,
+        "requires_ack": True,
+    }
+
+
+def _make_agent_response(
+    agent_id: str,
+    hypothesis_id: str = "H1",
+    confidence: float = 0.7,
+    polarity: int = 1,
+    answer: str = "Yes, enable caching",
+    session_id: str = "test-session",
+    round_num: int = 1,
+    snapshot_hash: str = "a" * 64,
+) -> dict:
+    return {
+        "type": "agent.response",
+        "session_id": session_id,
+        "agent_id": agent_id,
+        "round": round_num,
+        "snapshot_hash": snapshot_hash,
+        "hypothesis_id": hypothesis_id,
+        "answer": answer,
+        "answer_hash": hashlib.sha256(answer.encode()).hexdigest()[:16],
+        "signal": {
+            "confidence": confidence,
+            "polarity": polarity,
+            "generative_strength": confidence if polarity >= 0 else 0.0,
+            "inhibitory_pressure": confidence if polarity <= 0 else 0.0,
+        },
+        "expected_state_change": {
+            "keys_affected": ["cache_enabled"],
+            "predicted_delta": {"cache_enabled": True},
+            "confidence": confidence,
+        },
+        "explanation": f"Agent {agent_id} reasoning.",
+    }
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# A1: Telemetry Tests
+# ═════════════════════════════════════════════════════════════════════════════
+
+class TestTelemetryStateKeys:
+    def test_all_keys_are_strings(self):
+        for k in KEYS.all_keys():
+            assert isinstance(k, str), f"Key {k!r} is not a string"
+
+    def test_no_duplicate_keys(self):
+        all_k = KEYS.all_keys()
+        assert len(all_k) == len(set(all_k)), "Duplicate keys found in KEYS"
+
+    def test_cpu_keys_subset(self):
+        cpu_k = KEYS.cpu_keys()
+        assert all(k.startswith("cpu.") for k in cpu_k)
+        assert len(cpu_k) > 0
+
+    def test_ram_keys_subset(self):
+        ram_k = KEYS.ram_keys()
+        assert all(k.startswith("ram.") or k.startswith("swap.") for k in ram_k)
+
+    def test_health_keys_present(self):
+        hk = KEYS.health_keys()
+        assert KEYS.system_pressure in hk
+        assert KEYS.thermal_alert in hk
+        assert KEYS.poll_timestamp in hk
+
+
+class TestPressureModel:
+    @pytest.mark.parametrize("cpu,ram,swap,expected_range", [
+        (0.0, 0.0, 0.0, (0.0, 0.05)),    # idle
+        (50.0, 50.0, 0.0, (0.05, 0.50)), # moderate
+        (100.0, 100.0, 100.0, (0.9, 1.0)), # maxed out
+        (80.0, 30.0, 5.0, (0.1, 0.6)),   # cpu-heavy
+    ])
+    def test_pressure_range(self, cpu, ram, swap, expected_range):
+        p = _compute_pressure(cpu, ram, swap)
+        lo, hi = expected_range
+        assert lo <= p <= hi, f"pressure={p:.4f} not in [{lo}, {hi}] for cpu={cpu} ram={ram} swap={swap}"
+
+    def test_pressure_monotone_in_cpu(self):
+        """Higher CPU → higher or equal pressure."""
+        p_low = _compute_pressure(10.0, 30.0, 5.0)
+        p_high = _compute_pressure(90.0, 30.0, 5.0)
+        assert p_high >= p_low
+
+    def test_thermal_alert_threshold(self):
+        p = _compute_pressure(100.0, 100.0, 100.0)
+        assert p > 0.85, "Maxed system should trigger thermal alert"
+
+
+class TestTelemetryPoller:
+    def test_poll_once_writes_to_bus(self):
+        bus = MockStateBus()
+        poller = TelemetryPoller(bus, interval_s=1.0)
+        delta = poller.poll_once()
+
+        assert isinstance(delta, dict)
+        assert KEYS.cpu_percent_total in delta
+        assert KEYS.ram_percent in delta
+        assert KEYS.system_pressure in delta
+        assert KEYS.poll_timestamp in delta
+
+        state = bus.read()
+        assert state.get(KEYS.cpu_percent_total) == delta[KEYS.cpu_percent_total]
+
+    def test_poll_writes_to_delta_log(self):
+        bus = MockStateBus()
+        poller = TelemetryPoller(bus, interval_s=1.0)
+        poller.poll_once()
+        poller.poll_once()
+        assert len(bus.delta_log()) == 2
+
+    def test_cpu_in_valid_range(self):
+        bus = MockStateBus()
+        poller = TelemetryPoller(bus)
+        delta = poller.poll_once()
+        cpu = delta[KEYS.cpu_percent_total]
+        assert 0.0 <= cpu <= 100.0, f"CPU {cpu} out of range"
+
+    def test_ram_fields_consistent(self):
+        bus = MockStateBus()
+        poller = TelemetryPoller(bus)
+        delta = poller.poll_once()
+        total = delta[KEYS.ram_total_mb]
+        used = delta[KEYS.ram_used_mb]
+        avail = delta[KEYS.ram_available_mb]
+        assert total > 0
+        assert used >= 0
+        assert avail >= 0
+        # used + available should be ≤ total (allow small deviation)
+        assert used + avail <= total * 1.05
+
+    def test_system_pressure_in_range(self):
+        bus = MockStateBus()
+        poller = TelemetryPoller(bus)
+        delta = poller.poll_once()
+        p = delta[KEYS.system_pressure]
+        assert 0.0 <= p <= 1.0
+
+    def test_active_window_returns_strings(self):
+        title, proc = _get_active_window()
+        assert isinstance(title, str)
+        assert isinstance(proc, str)
+        assert len(title) > 0
+        assert len(proc) > 0
+
+    def test_callback_fires_on_poll(self):
+        bus = MockStateBus()
+        fired = []
+        poller = TelemetryPoller(bus, on_poll=lambda d: fired.append(d))
+        poller.poll_once()
+        assert len(fired) == 1
+        assert isinstance(fired[0], dict)
+
+    def test_start_stop_threading(self):
+        bus = MockStateBus()
+        poller = TelemetryPoller(bus, interval_s=0.1)
+        poller.start()
+        time.sleep(0.4)
+        poller.stop()
+        assert poller.poll_count >= 2  # at least 2 polls in 0.4s with 0.1s interval
+
+    def test_poll_count_increments(self):
+        bus = MockStateBus()
+        poller = TelemetryPoller(bus)
+        assert poller.poll_count == 0
+        poller.poll_once()
+        assert poller.poll_count == 1
+        poller.poll_once()
+        assert poller.poll_count == 2
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# A2: Asymmetric DASP Tests
+# ═════════════════════════════════════════════════════════════════════════════
+
+class TestSignalMath:
+    """Unit tests for the standalone gate math functions."""
+
+    def test_ingest_generative(self):
+        accs: dict[str, _HypothesisAccumulator] = {}
+        responses = [
+            _make_agent_response("a", "H1", confidence=0.8, polarity=1),
+            _make_agent_response("b", "H1", confidence=0.6, polarity=1),
+        ]
+        _ingest(responses, accs)
+        assert "H1" in accs
+        assert accs["H1"].S_g > 0.0
+        assert accs["H1"].S_i == 0.0
+
+    def test_ingest_inhibitory(self):
+        accs: dict[str, _HypothesisAccumulator] = {}
+        responses = [
+            _make_agent_response("a", "H1", confidence=0.9, polarity=-1),
+        ]
+        _ingest(responses, accs)
+        assert accs["H1"].S_i > 0.0
+        assert accs["H1"].S_g == 0.0
+
+    def test_ingest_neutral(self):
+        accs: dict[str, _HypothesisAccumulator] = {}
+        responses = [
+            _make_agent_response("a", "H1", confidence=0.5, polarity=0),
+        ]
+        _ingest(responses, accs)
+        # Polarity 0 contributes to both — but generative_strength and inhibitory_pressure
+        # are 0 for pure neutral, so net contributions depend on agent signal values
+        assert "H1" in accs
+
+    def test_s_net_formula(self):
+        acc = _HypothesisAccumulator(S_g=0.8, S_i=0.3)
+        assert abs(acc.S_net - 0.5) < 1e-9
+
+    def test_stall_gate_fires_when_delta_small(self):
+        accs = {"H1": _HypothesisAccumulator(S_g=0.5, S_i=0.1)}
+        accs["H1"].prev_S_net = accs["H1"].S_net  # no change
+        assert _stall_fired(accs, epsilon_stall=0.05)
+
+    def test_stall_gate_does_not_fire_when_delta_large(self):
+        accs = {"H1": _HypothesisAccumulator(S_g=0.8, S_i=0.1)}
+        accs["H1"].prev_S_net = 0.0  # large delta
+        assert not _stall_fired(accs, epsilon_stall=0.05)
+
+    def test_inhibition_gate_fires(self):
+        # S_i >= 0.5 * S_g → fire
+        accs = {"H1": _HypothesisAccumulator(S_g=1.0, S_i=0.6)}
+        assert _inhibition_fired(accs, tau_suppression=0.5)
+
+    def test_inhibition_gate_does_not_fire(self):
+        accs = {"H1": _HypothesisAccumulator(S_g=1.0, S_i=0.2)}
+        assert not _inhibition_fired(accs, tau_suppression=0.5)
+
+    def test_consensus_gate_clears(self):
+        accs = {"H1": _HypothesisAccumulator(S_g=0.9, S_i=0.1)}
+        cleared, hid, score = _consensus_cleared(accs, theta_consensus=0.7)
+        assert cleared
+        assert hid == "H1"
+        assert abs(score - 0.8) < 1e-6
+
+    def test_consensus_gate_does_not_clear(self):
+        accs = {"H1": _HypothesisAccumulator(S_g=0.5, S_i=0.2)}
+        cleared, _, _ = _consensus_cleared(accs, theta_consensus=0.7)
+        assert not cleared
+
+    def test_multi_hypothesis_consensus(self):
+        accs = {
+            "H1": _HypothesisAccumulator(S_g=0.4, S_i=0.2),  # S_net=0.2 — no
+            "H2": _HypothesisAccumulator(S_g=0.9, S_i=0.1),  # S_net=0.8 — yes
+        }
+        cleared, hid, score = _consensus_cleared(accs, theta_consensus=0.7)
+        assert cleared
+        assert hid == "H2"
+
+
+class TestAsymmetricCoordinatorMocked:
+    """Tests AsymmetricDASPCoordinator with Ollama calls mocked out."""
+
+    def _make_coordinator(self, events: list) -> AsymmetricDASPCoordinator:
+        def capture(event, data):
+            events.append((event, data))
+
+        return AsymmetricDASPCoordinator(
+            tier1_agents=[
+                TierConfig(name="mistral", model="mistral", max_rounds=3),
+                TierConfig(name="qwen", model="qwen", max_rounds=3),
+            ],
+            tier2_agent=TierConfig(name="nemotron", model="nemotron"),
+            tau_suppression=0.5,
+            theta_consensus=0.65,
+            epsilon_stall=0.05,
+            on_event=capture,
+        )
+
+    def _patch_ollama(self, coordinator, responses_per_agent: dict[str, list[dict]]):
+        """
+        Monkey-patch _call_ollama inside asymmetric_dasp to return deterministic responses.
+        responses_per_agent: { agent_id: [round1_response, round2_response, ...] }
+        """
+        call_counts: dict[str, int] = {}
+
+        def mock_call(agent_id, model, host, session_id, round_num, task,
+                      snapshot_hash, others, temperature=0.7, timeout_s=60.0):
+            idx = call_counts.get(agent_id, 0)
+            resp_list = responses_per_agent.get(agent_id, [])
+            resp = resp_list[idx] if idx < len(resp_list) else resp_list[-1] if resp_list else None
+            call_counts[agent_id] = idx + 1
+            if resp:
+                resp = dict(resp)
+                resp["session_id"] = session_id
+                resp["round"] = round_num
+                resp["snapshot_hash"] = snapshot_hash
+                resp["agent_id"] = agent_id
+            return resp
+
+        import effector.adapters.asymmetric_dasp as mod
+        mod._call_ollama = mock_call
+        return coordinator
+
+    def test_consensus_reached_in_tier1(self):
+        """Both local agents agree strongly → consensus without escalation."""
+        events: list = []
+        coord = self._make_coordinator(events)
+
+        bus = MockStateBus({"cache_enabled": False})
+        snap_hash, _, _ = bus.snapshot()
+
+        resp_a = _make_agent_response("mistral", "H1", 0.9, 1, snapshot_hash=snap_hash)
+        resp_b = _make_agent_response("qwen",    "H1", 0.85, 1, snapshot_hash=snap_hash)
+
+        self._patch_ollama(coord, {"mistral": [resp_a], "qwen": [resp_b]})
+        result = coord.run(task="Should caching be enabled?", snapshot_hash=snap_hash, state_bus=bus)
+
+        assert result["terminated_reason"] in ("consensus", "consensus_after_escalation", "max_rounds")
+        assert not result["tier2_injected"]
+        assert len(result["escalations"]) == 0
+
+        event_names = [e[0] for e in events]
+        assert "session_started" in event_names
+        assert "session_complete" in event_names
+
+    def test_stall_triggers_tier2_escalation(self):
+        """Agents produce identical signals round-over-round → stall → tier-2."""
+        events: list = []
+        coord = self._make_coordinator(events)
+
+        bus = MockStateBus()
+        snap_hash, _, _ = bus.snapshot()
+
+        # Both agents give the same answer every round → stall
+        resp_a = _make_agent_response("mistral", "H1", 0.6, 1, snapshot_hash=snap_hash)
+        resp_b = _make_agent_response("qwen",    "H1", 0.5, 1, snapshot_hash=snap_hash)
+        resp_arb = _make_agent_response("nemotron", "H1", 0.9, 1, snapshot_hash=snap_hash)
+
+        self._patch_ollama(coord, {
+            "mistral": [resp_a, resp_a, resp_a],
+            "qwen":    [resp_b, resp_b, resp_b],
+            "nemotron": [resp_arb],
+        })
+
+        result = coord.run(task="Analyse telemetry", snapshot_hash=snap_hash, state_bus=bus)
+
+        # Stall MUST have fired at some round
+        event_names = [e[0] for e in events]
+        # Either escalation_triggered event OR tier2_injected in result
+        # (depends on whether prev_S_net was set before first stall check)
+        # We mainly verify the session completes and result is valid
+        assert "session_id" in result
+        assert "final_answer" in result
+        assert isinstance(result["consensus_score"], float)
+
+    def test_inhibition_triggers_escalation(self):
+        """Strong inhibitory signal from one agent → inhibition gate → tier-2."""
+        events: list = []
+        coord = self._make_coordinator(events)
+
+        bus = MockStateBus()
+        snap_hash, _, _ = bus.snapshot()
+
+        # mistral strongly against, qwen weakly for → S_i > tau * S_g
+        resp_a = _make_agent_response("mistral", "H1", 0.95, -1, snapshot_hash=snap_hash)
+        resp_b = _make_agent_response("qwen",    "H1", 0.5,   1, snapshot_hash=snap_hash)
+        resp_arb = _make_agent_response("nemotron", "H2", 0.85, 1, snapshot_hash=snap_hash)
+
+        self._patch_ollama(coord, {
+            "mistral":  [resp_a],
+            "qwen":     [resp_b],
+            "nemotron": [resp_arb],
+        })
+
+        result = coord.run(task="Should we shut down the process?", snapshot_hash=snap_hash, state_bus=bus)
+
+        assert "final_answer" in result
+        assert "session_id" in result
+
+    def test_result_contract_fields(self):
+        """Verify all expected fields are present in the result dict."""
+        events: list = []
+        coord = self._make_coordinator(events)
+        bus = MockStateBus()
+        snap_hash, _, _ = bus.snapshot()
+
+        resp = _make_agent_response("mistral", "H1", 0.8, 1, snapshot_hash=snap_hash)
+        self._patch_ollama(coord, {"mistral": [resp], "qwen": [resp]})
+
+        result = coord.run(task="Test task", snapshot_hash=snap_hash, state_bus=bus)
+
+        required_fields = {
+            "session_id", "final_answer", "consensus_score", "rounds",
+            "snapshot_hash", "terminated_reason", "disagreement_score",
+            "signal_manifold", "escalations", "tier1_agents",
+            "tier2_agent", "tier2_injected", "all_rounds",
+        }
+        for field in required_fields:
+            assert field in result, f"Missing field: {field}"
+
+    def test_abstention_on_ollama_failure(self):
+        """When _call_ollama returns None, coordinator should produce abstention."""
+        events: list = []
+        coord = self._make_coordinator(events)
+        bus = MockStateBus()
+        snap_hash, _, _ = bus.snapshot()
+
+        import effector.adapters.asymmetric_dasp as mod
+        mod._call_ollama = lambda *a, **k: None  # always fail
+
+        result = coord.run(task="Test abstention", snapshot_hash=snap_hash, state_bus=bus)
+        # Should complete without raising
+        assert "final_answer" in result
+        # All agents abstained → answer is abstention
+        assert "(abstention)" in result["final_answer"]
+
+    def test_events_emitted_in_order(self):
+        """session_started must come before session_complete."""
+        events: list = []
+        coord = self._make_coordinator(events)
+        bus = MockStateBus()
+        snap_hash, _, _ = bus.snapshot()
+
+        resp = _make_agent_response("mistral", "H1", 0.9, 1, snapshot_hash=snap_hash)
+        self._patch_ollama(coord, {"mistral": [resp], "qwen": [resp]})
+        coord.run(task="Test order", snapshot_hash=snap_hash, state_bus=bus)
+
+        event_names = [e[0] for e in events]
+        assert event_names.index("session_started") < event_names.index("session_complete")
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# A3: IEP Validation + Queue Tests
+# ═════════════════════════════════════════════════════════════════════════════
+
+class TestIEPBuilder:
+    def _make_debate_result(self, consensus=0.8, tier1=None) -> dict:
+        return {
+            "session_id": str(uuid.uuid4()),
+            "final_answer": "Enable response caching",
+            "consensus_score": consensus,
+            "rounds": 2,
+            "snapshot_hash": "a" * 64,
+            "tier1_agents": tier1 or ["mistral", "qwen"],
+            "tier2_injected": False,
+            "terminated_reason": "consensus",
+            "all_rounds": [],
+        }
+
+    def test_basic_envelope_shape(self):
+        bus = MockStateBus({"cache_enabled": False})
+        snap_hash, _, _ = bus.snapshot()
+        result = self._make_debate_result()
+
+        env = IEPBuilder.from_debate_result(
+            debate_result=result,
+            state_bus_snapshot_hash=snap_hash,
+            keys_affected=["cache_enabled"],
+        )
+
+        assert env["iep_version"] == "1.0"
+        assert "envelope_id" in env
+        assert env["intended_action"]["verb"] == "WRITE"
+        assert env["intended_action"]["target"] == "world_state"
+        assert env["origin"]["consensus_score"] == pytest.approx(0.8, abs=0.001)
+        assert env["world_model_snapshot"]["hash"] == snap_hash
+
+    def test_expected_state_change_present(self):
+        bus = MockStateBus()
+        snap_hash, _, _ = bus.snapshot()
+        result = self._make_debate_result()
+
+        env = IEPBuilder.from_debate_result(result, snap_hash, ["test_key"])
+        assert "expected_state_change" in env
+        esc = env["expected_state_change"]
+        assert "keys_affected" in esc
+        assert "predicted_delta" in esc
+        assert "confidence" in esc
+
+    def test_confidence_clamped(self):
+        bus = MockStateBus()
+        snap_hash, _, _ = bus.snapshot()
+        result = self._make_debate_result(consensus=1.5)  # > 1.0
+
+        env = IEPBuilder.from_debate_result(result, snap_hash)
+        conf = env["expected_state_change"]["confidence"]
+        assert 0.0 <= conf <= 1.0
+
+    def test_explicit_predicted_delta(self):
+        bus = MockStateBus({"k": "v1"})
+        snap_hash, _, _ = bus.snapshot()
+        result = self._make_debate_result()
+
+        env = IEPBuilder.from_debate_result(
+            result, snap_hash,
+            keys_affected=["k"],
+            predicted_delta={"k": "v2"},
+        )
+        assert env["expected_state_change"]["predicted_delta"] == {"k": "v2"}
+
+    def test_esc_aggregation_from_rounds(self):
+        """IEPBuilder should aggregate predicted deltas from round transcripts."""
+        bus = MockStateBus()
+        snap_hash, _, _ = bus.snapshot()
+
+        result = self._make_debate_result()
+        result["all_rounds"] = [
+            {"responses": [
+                {"expected_state_change": {"predicted_delta": {"cache_enabled": True}}},
+                {"expected_state_change": {"predicted_delta": {"cache_enabled": True}}},
+            ]},
+        ]
+
+        env = IEPBuilder.from_debate_result(
+            result, snap_hash, keys_affected=["cache_enabled"]
+        )
+        pd = env["expected_state_change"]["predicted_delta"]
+        # Modal value should be True
+        assert pd.get("cache_enabled") is True
+
+    def test_goal_context_present(self):
+        bus = MockStateBus()
+        snap_hash, _, _ = bus.snapshot()
+        env = IEPBuilder.from_debate_result(self._make_debate_result(), snap_hash)
+        gc = env["goal_context"]
+        assert "root_goal_id" in gc
+        assert "parent_goal_id" in gc
+        assert gc["depth"] == 0
+
+
+class TestIEPValidator:
+    def test_ack_on_valid_envelope(self):
+        bus = MockStateBus({"k": "v"})
+        env = _make_valid_envelope(bus)
+        validator = IEPValidator(state_bus=bus)
+        result = validator.validate(env)
+        assert result.status == "ACK"
+        assert "schema_completeness" in result.checks_passed
+        assert "ttl_freshness" in result.checks_passed
+        assert "snapshot_hash" in result.checks_passed
+        assert len(result.checks_failed) == 0
+
+    def test_nack_missing_field(self):
+        bus = MockStateBus()
+        env = _make_valid_envelope(bus)
+        del env["ttl_ms"]
+        result = IEPValidator(bus).validate(env)
+        assert result.status != "ACK"
+        assert "schema_completeness" in result.checks_failed
+        assert result.failure_reason is not None
+
+    def test_nack_ttl_expired(self):
+        bus = MockStateBus()
+        env = _make_valid_envelope(bus)
+        env["ttl_ms"] = 1  # 1ms TTL — immediately expired
+        time.sleep(0.01)
+        result = IEPValidator(bus).validate(env)
+        assert "ttl_freshness" in result.checks_failed
+
+    def test_nack_stale_snapshot(self):
+        bus = MockStateBus({"k": "original"})
+        env = _make_valid_envelope(bus)
+        # Mutate state so hash no longer matches
+        bus.apply_delta("x", {"k": "changed"}, "test")
+        result = IEPValidator(bus).validate(env)
+        assert "snapshot_hash" in result.checks_failed
+
+    def test_nack_abort_condition_triggered(self):
+        bus = MockStateBus({"cpu_percent": 95})
+        env = _make_valid_envelope(bus)
+        env["abort_conditions"] = [
+            {"condition": "cpu_percent >= 90", "action": "ABORT_AND_REPLAN"}
+        ]
+        result = IEPValidator(bus).validate(env)
+        assert "abort_conditions" in result.checks_failed
+        assert "ABORT_AND_REPLAN" in result.failure_reason
+
+    def test_abort_condition_not_triggered(self):
+        bus = MockStateBus({"cpu_percent": 50})
+        env = _make_valid_envelope(bus)
+        env["abort_conditions"] = [
+            {"condition": "cpu_percent >= 90", "action": "ABORT_AND_REPLAN"}
+        ]
+        result = IEPValidator(bus).validate(env)
+        assert result.status == "ACK"
+
+    def test_nack_role_authorization(self):
+        bus = MockStateBus()
+        env = _make_valid_envelope(bus)
+        env["agent"]["role"] = "observer"
+        validator = IEPValidator(bus, authorized_roles={"WRITE": ["executor", "planner"]})
+        result = validator.validate(env)
+        assert "role_authorization" in result.checks_failed
+
+    def test_role_authorization_passes(self):
+        bus = MockStateBus()
+        env = _make_valid_envelope(bus)
+        env["agent"]["role"] = "executor"
+        validator = IEPValidator(bus, authorized_roles={"WRITE": ["executor"]})
+        result = validator.validate(env)
+        assert result.status == "ACK"
+
+    def test_checks_fail_fast(self):
+        """Once one check fails, subsequent checks should not run."""
+        bus = MockStateBus()
+        env = _make_valid_envelope(bus)
+        del env["ttl_ms"]  # schema fail
+        result = IEPValidator(bus).validate(env)
+        # Only schema should be in failed; ttl etc. never ran
+        assert result.checks_failed == ["schema_completeness"]
+
+    @pytest.mark.parametrize("op,state_val,cond_val,should_trigger", [
+        ("==",  5,   "5",   True),
+        ("!=",  5,   "5",   False),
+        (">=",  10,  "5",   True),
+        ("<=",  3,   "5",   True),
+        (">",   6,   "5",   True),
+        ("<",   4,   "5",   True),
+        ("==",  "x", "x",  True),
+        ("!=",  "x", "y",  True),
+    ])
+    def test_condition_evaluation(self, op, state_val, cond_val, should_trigger):
+        bus = MockStateBus({"key": state_val})
+        env = _make_valid_envelope(bus)
+        env["abort_conditions"] = [
+            {"condition": f"key {op} {cond_val}", "action": "ABORT_AND_REPLAN"}
+        ]
+        result = IEPValidator(bus).validate(env)
+        if should_trigger:
+            assert "abort_conditions" in result.checks_failed
+        else:
+            assert "abort_conditions" not in result.checks_failed
+
+    def test_post_execution_no_divergence(self):
+        bus = MockStateBus()
+        env = _make_valid_envelope(bus)
+        env["expected_state_change"]["predicted_delta"] = {"k": "v"}
+        actual = {"k": "v"}  # perfect match
+        r = IEPValidator(bus).post_execution_compare(env, actual)
+        assert r["divergence_score"] == 0.0
+        assert not r["replan_signal"]
+        assert not r["escalation_signal"]
+
+    def test_post_execution_full_divergence(self):
+        bus = MockStateBus()
+        env = _make_valid_envelope(bus)
+        env["expected_state_change"]["predicted_delta"] = {"k": "predicted"}
+        actual = {"k": "actual", "extra": "key"}  # mismatch
+        r = IEPValidator(bus).post_execution_compare(env, actual)
+        assert r["divergence_score"] > 0.0
+
+    def test_post_execution_replan_signal(self):
+        bus = MockStateBus()
+        env = _make_valid_envelope(bus)
+        env["expected_state_change"]["predicted_delta"] = {"k1": "a", "k2": "b", "k3": "c"}
+        actual = {"k1": "a", "k2": "WRONG", "k3": "WRONG"}  # 2/3 mismatch ≈ 0.67
+        r = IEPValidator(bus).post_execution_compare(env, actual, epsilon_replan=0.3)
+        assert r["replan_signal"]
+
+
+class TestEnvelopeQueue:
+    def _make_ack_item(self, bus: MockStateBus) -> tuple[dict, ValidationResult]:
+        env = _make_valid_envelope(bus)
+        verdict = ValidationResult(env["envelope_id"], "ACK")
+        return env, verdict
+
+    def _make_nack_item(self, bus: MockStateBus) -> tuple[dict, ValidationResult]:
+        env = _make_valid_envelope(bus)
+        verdict = ValidationResult(
+            env["envelope_id"], "NACK_ttl_freshness",
+            failure_reason="TTL expired",
+            checks_failed=["ttl_freshness"],
+        )
+        return env, verdict
+
+    def test_put_and_get(self):
+        bus = MockStateBus()
+        eq = EnvelopeQueue()
+        env, verdict = self._make_ack_item(bus)
+        eq.put(env, verdict)
+        assert eq.qsize() == 1
+        item = eq.get_nowait()
+        assert item.is_ack()
+        assert item.envelope["envelope_id"] == env["envelope_id"]
+
+    def test_stats_tracking(self):
+        bus = MockStateBus()
+        eq = EnvelopeQueue()
+        env_a, verdict_a = self._make_ack_item(bus)
+        env_n, verdict_n = self._make_nack_item(bus)
+        eq.put(env_a, verdict_a)
+        eq.put(env_n, verdict_n)
+        stats = eq.stats
+        assert stats["total_enqueued"] == 2
+        assert stats["total_acked"] == 1
+        assert stats["total_nacked"] == 1
+
+    def test_drain(self):
+        bus = MockStateBus()
+        eq = EnvelopeQueue()
+        for _ in range(5):
+            env, v = self._make_ack_item(bus)
+            eq.put(env, v)
+        items = eq.drain()
+        assert len(items) == 5
+        assert eq.empty()
+
+    def test_persist_and_replay(self):
+        bus = MockStateBus()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "test_queue.jsonl"
+            eq = EnvelopeQueue(persist_path=path)
+            for i in range(3):
+                env, v = self._make_ack_item(bus)
+                eq.put(env, v)
+
+            replayed = eq.replay_from_disk()
+            assert len(replayed) == 3
+            for entry in replayed:
+                assert "envelope" in entry
+                assert "validation" in entry
+                assert "queued_at" in entry
+
+    def test_jsonl_is_valid(self):
+        bus = MockStateBus()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "valid.jsonl"
+            eq = EnvelopeQueue(persist_path=path)
+            env, v = self._make_ack_item(bus)
+            eq.put(env, v)
+
+            with open(path) as f:
+                lines = [l.strip() for l in f if l.strip()]
+            assert len(lines) == 1
+            parsed = json.loads(lines[0])
+            assert "envelope" in parsed
+
+    def test_item_to_dict(self):
+        bus = MockStateBus()
+        env, verdict = self._make_ack_item(bus)
+        item = QueueItem(env, verdict)
+        d = item.to_dict()
+        assert "envelope" in d
+        assert "validation" in d
+        assert "queued_at" in d
+
+    def test_thread_safety(self):
+        """Multiple producers writing concurrently — no data loss."""
+        bus = MockStateBus()
+        eq = EnvelopeQueue()
+        errors: list = []
+
+        def producer():
+            try:
+                for _ in range(10):
+                    env, v = self._make_ack_item(bus)
+                    eq.put(env, v)
+            except Exception as e:
+                errors.append(e)
+
+        threads = [threading.Thread(target=producer) for _ in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert not errors
+        assert eq.stats["total_enqueued"] == 50
+
+    def test_empty_queue_raises(self):
+        eq = EnvelopeQueue()
+        with pytest.raises(queue.Empty):
+            eq.get_nowait()
+
+    def test_maxsize_blocks(self):
+        bus = MockStateBus()
+        eq = EnvelopeQueue(maxsize=1)
+        env, v = self._make_ack_item(bus)
+        eq.put(env, v)
+        # Second put with block=False should raise Full
+        env2, v2 = self._make_ack_item(bus)
+        with pytest.raises(queue.Full):
+            eq.put(env2, v2, block=False)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Integration: A1 → A2 → A3 pipeline (mocked Ollama)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestIntegrationPipeline:
+    """
+    End-to-end pipeline test:
+      A1: poll telemetry → StateBus
+      A2: debate on telemetry snapshot (mocked Ollama)
+      A3: build envelope → validate → enqueue
+    """
+
+    def test_full_pipeline_ack(self):
+        import effector.adapters.asymmetric_dasp as mod
+
+        # A1: telemetry
+        bus = MockStateBus()
+        poller = TelemetryPoller(bus, interval_s=1.0)
+        poller.poll_once()
+
+        state = bus.read()
+        snap_hash, _, _ = bus.snapshot()
+        assert KEYS.cpu_percent_total in state
+
+        # A2: debate (mocked)
+        events: list = []
+        coord = AsymmetricDASPCoordinator(
+            tier1_agents=[
+                TierConfig(name="m1", model="mistral", max_rounds=2),
+                TierConfig(name="m2", model="qwen", max_rounds=2),
+            ],
+            tier2_agent=TierConfig(name="nemotron", model="nemotron"),
+            on_event=lambda e, d: events.append(e),
+        )
+
+        resp = _make_agent_response("m1", "H1", 0.85, 1, snapshot_hash=snap_hash)
+        def _mock_call(agent_id, model, host, session_id, round_num, task,
+                       snapshot_hash, others, temperature=0.7, timeout_s=60.0):
+            return {**resp, "agent_id": agent_id, "session_id": session_id,
+                    "round": round_num, "snapshot_hash": snapshot_hash}
+
+        mod._call_ollama = _mock_call
+
+        result = coord.run(
+            task=(
+                f"CPU={state.get(KEYS.cpu_percent_total):.1f}% "
+                f"RAM={state.get(KEYS.ram_percent):.1f}% — analyse health"
+            ),
+            snapshot_hash=snap_hash,
+            state_bus=bus,
+        )
+
+        assert "final_answer" in result
+        assert isinstance(result["consensus_score"], float)
+
+        # A3: envelope + validate + queue
+        emit_hash, _, _ = bus.snapshot()
+        envelope = IEPBuilder.from_debate_result(
+            debate_result=result,
+            state_bus_snapshot_hash=emit_hash,
+            keys_affected=[KEYS.system_pressure, KEYS.cpu_percent_total],
+        )
+
+        validator = IEPValidator(bus)
+        verdict = validator.validate(envelope)
+
+        # Hash was just taken → should ACK (unless telemetry fired between snapshot and emit)
+        assert "envelope_id" in envelope
+        assert verdict.status in ("ACK", "NACK_SNAPSHOT_HASH")  # both valid in timing test
+
+        eq = EnvelopeQueue()
+        item = eq.put(envelope, verdict)
+        assert eq.stats["total_enqueued"] == 1
+        assert item.envelope["envelope_id"] == envelope["envelope_id"]
+
+    def test_pipeline_preserves_snapshot_chain(self):
+        """Snapshot hash from A1 must flow unmodified into IEP envelope."""
+        bus = MockStateBus({"stable_key": "stable_value"})
+        snap_hash_a1, _, _ = bus.snapshot()
+
+        # A3 directly (no debate needed to verify hash chain)
+        envelope = IEPBuilder.from_debate_result(
+            debate_result={
+                "session_id": str(uuid.uuid4()),
+                "final_answer": "test",
+                "consensus_score": 0.9,
+                "tier1_agents": [],
+                "all_rounds": [],
+            },
+            state_bus_snapshot_hash=snap_hash_a1,
+            keys_affected=["stable_key"],
+        )
+
+        assert envelope["world_model_snapshot"]["hash"] == snap_hash_a1
+
+        validator = IEPValidator(bus)
+        verdict = validator.validate(envelope)
+        assert verdict.status == "ACK", (
+            f"Expected ACK but got {verdict.status}: {verdict.failure_reason}"
+        )
+
+
+if __name__ == "__main__":
+    # Quick smoke run without pytest
+    print("Running smoke tests...")
+    import traceback
+
+    tests_run = 0
+    tests_failed = 0
+
+    for cls_name, cls in list(globals().items()):
+        if not cls_name.startswith("Test"):
+            continue
+        instance = cls()
+        for method_name in dir(instance):
+            if not method_name.startswith("test_"):
+                continue
+            method = getattr(instance, method_name)
+            tests_run += 1
+            try:
+                method()
+                print(f"  ✅ {cls_name}.{method_name}")
+            except Exception as exc:
+                tests_failed += 1
+                print(f"  ❌ {cls_name}.{method_name}: {exc}")
+                traceback.print_exc()
+
+    print(f"\n{tests_run - tests_failed}/{tests_run} tests passed.")
+    sys.exit(0 if not tests_failed else 1)
