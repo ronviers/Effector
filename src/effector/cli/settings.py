@@ -179,8 +179,16 @@ class Settings:
                 "  pip install tomli-w"
             )
         self._path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # TOML does not support 'None'. Strip them out before saving.
+        def _strip_nones(d: dict) -> dict:
+            return {k: (_strip_nones(v) if isinstance(v, dict) else v) 
+                    for k, v in d.items() if v is not None}
+            
+        clean_data = _strip_nones(self._data)
+        
         with open(self._path, "wb") as fh:
-            tomli_w.dump(self._data, fh)
+            tomli_w.dump(clean_data, fh)
 
     # ── Access ────────────────────────────────────────────────────────────────
 
