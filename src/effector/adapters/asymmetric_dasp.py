@@ -62,8 +62,16 @@ class TierConfig:
     model: str
     host: str = "http://127.0.0.1:11434"
     temperature: float = 0.7
+    temperature_schedule: list[float] | None = None   # IEP-A3: per-round temps
     timeout_s: float = 60.0
     max_rounds: int = 3          # rounds before escalating to next tier
+
+    def get_temperature(self, round_num: int) -> float:
+        """Return the temperature for a given 1-indexed round number."""
+        if self.temperature_schedule:
+            idx = min(round_num - 1, len(self.temperature_schedule) - 1)
+            return self.temperature_schedule[idx]
+        return self.temperature
 
 
 @dataclass
@@ -165,7 +173,7 @@ Schema:
   "agent_id": "{agent_id}",
   "round": {round},
   "snapshot_hash": "{snapshot_hash}",
-  "hypothesis_id": "<H1|H2|...>",
+  "hypothesis_id": "<unique short id for your hypothesis, e.g. H1>",
   "answer": "<your conclusion about the telemetry>",
   "answer_hash": "<first 16 chars of sha256 of answer>",
   "signal": {{
@@ -481,7 +489,7 @@ class AsymmetricDASPCoordinator:
                     task=task,
                     snapshot_hash=snapshot_hash,
                     others=others_summary,
-                    temperature=tier.temperature,
+                    temperature=tier.get_temperature(local_round),
                     timeout_s=tier.timeout_s,
                 )
                 if resp:
@@ -519,6 +527,7 @@ class AsymmetricDASPCoordinator:
                     "winning_hypothesis": winning_hid,
                     "consensus_score": consensus_score,
                 })
+                prev_responses = current_responses
                 break
 
             if stall or inhibition:
