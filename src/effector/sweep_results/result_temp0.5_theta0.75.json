@@ -1,0 +1,114 @@
+{
+  "session_id": "d3fef96f-92b1-48da-be32-21b651eb179d",
+  "final_answer": "Acolyte Alpha should spawn a Glimmer as it aligns better with the Thermodynamic Theory of Coziness, which prioritizes active processes over passive tasks. The active cmd.exe process indicates a need for system optimization, a task that Glimmer is designed to handle.",
+  "consensus_score": 1.0,
+  "rounds": 1,
+  "snapshot_hash": "9a24de7826946f836095f279bd7220f4c86c29281e667f847835f852c613136e",
+  "snapshot_timestamp": "2026-04-01T17:57:14.461049+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "consensus",
+  "winning_hypothesis": "H1",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H1": {
+      "S_g": 1.1199999999999999,
+      "S_i": 0.0,
+      "S_net": 1.1199999999999999
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "d3fef96f-92b1-48da-be32-21b651eb179d",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "d3fef96f-92b1-48da-be32-21b651eb179d",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "9a24de7826946f836095f279bd7220f4c86c29281e667f847835f852c613136e",
+          "hypothesis_id": "H1",
+          "answer": "Acolyte Alpha should spawn a Glimmer as it aligns better with the Thermodynamic Theory of Coziness, which prioritizes active processes over passive tasks. The active cmd.exe process indicates a need for system optimization, a task that Glimmer is designed to handle.",
+          "answer_hash": "61983452b7f2c038",
+          "signal": {
+            "confidence": 0.8,
+            "polarity": 1,
+            "generative_strength": 0.7,
+            "inhibitory_pressure": 0.2
+          },
+          "expected_state_change": {
+            "keys_affected": [
+              "system_process"
+            ],
+            "predicted_delta": {
+              "Glimmer": true
+            },
+            "confidence": 0.7
+          },
+          "explanation": "The active cmd.exe process indicates system inefficiency, a problem that Glimmer is designed to address. Acolyte Alpha's action aligns with the Thermodynamic Theory of Coziness, which prioritizes active processes over passive tasks."
+        },
+        {
+          "type": "agent.response",
+          "session_id": "d3fef96f-92b1-48da-be32-21b651eb179d",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "9a24de7826946f836095f279bd7220f4c86c29281e667f847835f852c613136e",
+          "hypothesis_id": "H1",
+          "answer": "The presence of unsorted files and an active cmd.exe window suggests a state of disarray, which is contrary to the cozy environment preferred by Glimmers. Acolyte Beta's desire to categorize the files would reduce entropy and increase coziness.",
+          "answer_hash": "d2a9f4b0c6e81735",
+          "signal": {
+            "confidence": 0.8,
+            "polarity": 1,
+            "generative_strength": 0.7,
+            "inhibitory_pressure": 0.3
+          },
+          "expected_state_change": {
+            "keys_affected": [
+              "entropy",
+              "coziness"
+            ],
+            "predicted_delta": {
+              "entropy": -2,
+              "coziness": 1
+            },
+            "confidence": 0.7
+          },
+          "explanation": "Given the Thermodynamic Theory of Coziness, where a lower entropy environment is more conducive to Glimmer generation, Acolyte Beta's action of categorizing files would decrease system disorder and thus increase coziness. This aligns with the directive for spawning a Glimmer."
+        }
+      ],
+      "accumulators": {
+        "H1": {
+          "S_g": 1.1199999999999999,
+          "S_i": 0.0,
+          "S_net": 1.1199999999999999
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 60.66,
+  "_iep_validation": {
+    "envelope_id": "93f0cb4c-bf09-43b4-a61c-3606e0b786ee",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=9a24de782694... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-01T17:57:14.462050+00:00"
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "session_id": "027ed1d2-7a32-4033-95d8-239366529459",
+  "final_answer": "{\"Alice\": \"knave\", \"Bob\": \"knight\", \"Charlie\": \"knight\"}",
+  "consensus_score": 1.0,
+  "rounds": 1,
+  "snapshot_hash": "67f3f4664924352b8464db8cc4fc8977b83851d2b5ae83db0c8ab709dc52fdb9",
+  "snapshot_timestamp": "2026-04-01T22:07:14.324011+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "consensus",
+  "winning_hypothesis": "H_agent1",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H_agent1": {
+      "S_g": 1.0,
+      "S_i": 0.0,
+      "S_net": 1.0
+    },
+    "H_agent2": {
+      "S_g": 0.95,
+      "S_i": 0.0,
+      "S_net": 0.95
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "027ed1d2-7a32-4033-95d8-239366529459",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "027ed1d2-7a32-4033-95d8-239366529459",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "67f3f4664924352b8464db8cc4fc8977b83851d2b5ae83db0c8ab709dc52fdb9",
+          "hypothesis_id": "H_agent1",
+          "answer": "{\"Alice\": \"knave\", \"Bob\": \"knight\", \"Charlie\": \"knight\"}",
+          "answer_hash": "677e543d4d9dda60",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 1.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "1. Let's reason through each statement and consider the possible scenarios for Alice, Bob, and Charlie being knights or knaves.\n2. Alice claims that Bob is a knave. If Alice is telling the truth (knight), then Bob must be a knave. If Alice is lying (knave), then Bob could either be a knight or another knave. However, this scenario doesn't help us determine Bob's type definitively because we don't know if Alice typically lies about knaves or knights.\n3. Bob claims that Alice and Charlie are of the same type. If Bob is a knight, then he's telling the truth. If Bob is a knave, then he's lying, but we can't determine the exact types of Alice and Charlie from this statement alone because it only confirms they share a type, not their specific types.\n4. Charlie claims that Alice is a knave. If Charlie is a knight, then his statement is true, making Alice a knave. If Charlie is a knave, then he's lying, and once again we can't determine Alice's type definitively because we don't know if Charlie typically lies about knights or knaves.\n5. However, we do know that Bob's statement \"Alice and Charlie are of the same type\" implies that if Alice is a knight (k), then Charlie must also be a knight (since they share the same type). Similarly, if Alice is a knave (K), then Charlie must also be a knave (since they have opposite types).\n6. Using this information and the fact that Bob's statement must hold true for both scenarios, we can deduce that if Alice is a knight, then Charlie must also be a knight, making Bob a knight as well since he correctly stated they share the same type. If Alice is a knave, then Charlie must also be a knave, again making Bob a knight because his statement was correct.\n7. In both scenarios, Bob turns out to be a knight, so we can conclude that Alice and Charlie are of opposite types, with Alice being a knave and Charlie being a knight."
+        },
+        {
+          "type": "agent.response",
+          "session_id": "027ed1d2-7a32-4033-95d8-239366529459",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "67f3f4664924352b8464db8cc4fc8977b83851d2b5ae83db0c8ab709dc52fdb9",
+          "hypothesis_id": "H_agent2",
+          "answer": "```json\n{\n  \"Alice\": \"knave\",\n  \"Bob\": \"knight\",\n  \"Charlie\": \"knave\"\n}\n```",
+          "answer_hash": "e60a42ea143e5c38",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 0.95,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "To solve this puzzle, we need to analyze the statements made by Alice, Bob, and Charlie and evaluate their consistency based on whether they are knights (truth-tellers) or knaves (liars). Let's break down each statement:\n\n1. **Alice says: \"Bob is a knave.\"**\n   - If Alice is a knight, then her statement must be true.\n   - If Alice is a knave, then her statement must be false.\n\n2. **Bob says: \"Alice and Charlie are of the same type.\"**\n   - If Bob is a knight, then his statement must be true (both Alice and Charlie must either both be knights or both be knaves).\n   - If Bob is a knave, then his statement must be false (one of them must be a knight and the other a knave).\n\n3. **Charlie says: \"Alice is a knave.\"**\n   - If Charlie is a knight, then his statement must be true.\n   - If Charlie is a knave, then his statement must be false.\n\nWe need to find a consistent set of types for Alice, Bob, and Charlie that satisfies all three statements. Let's test the possibilities:\n\n- **Assume Alice is a knight:**\n  - Then her statement \"Bob is a knave\" must be true (so Bob is a knave).\n  - Since Bob is a knave, his statement \"Alice and Charlie are of the same type\" must be false.\n    - This means Alice and Charlie cannot both be knights or both be knaves. Thus, if Alice is a knight, then Charlie must be a knave.\n  - If Charlie is a knave, his statement \"Alice is a knave\" must be false (which it would be because we assumed Alice is a knight).\n\n- **Assume Alice is a knave:**\n  - Then her statement \"Bob is a knave\" must be false (so Bob must be a knight).\n  - If Bob is a knight, his statement \"Alice and Charlie are of the same type\" must be true.\n    - This means both Alice and Charlie must either both be knights or both be knaves. Since we assumed Alice is a knave, Charlie must also be a knave.\n  - If Charlie is a knave, his statement \"Alice is a knave\" must be false (which it would be because we assumed Alice is a knave).\n\nThe only consistent set of statements that holds true under the rules given is when Alice and Charlie are both knaves and Bob is a knight."
+        }
+      ],
+      "accumulators": {
+        "H_agent1": {
+          "S_g": 1.0,
+          "S_i": 0.0,
+          "S_net": 1.0
+        },
+        "H_agent2": {
+          "S_g": 0.95,
+          "S_i": 0.0,
+          "S_net": 0.95
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 65.08,
+  "_iep_validation": {
+    "envelope_id": "c83bfd17-6d69-4a33-8b9f-ae3ae06288a4",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=67f3f4664924... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-01T22:07:14.325213+00:00"
+  }
+}

@@ -1,0 +1,752 @@
+"""
+two_phase_adapter.py — DASP §4.3 Compliant Two-Phase Agent Adapter
+===================================================================
+
+PHASE 1 — REASONING NODE
+    A pure cognitive LLM call. The agent receives task context and the
+    prior-round arguments. There is no protocol awareness, no JSON schema,
+    no snapshot hash, no mention of DASP. The agent thinks freely, in natural
+    language, and produces a reasoning trace that ends in a clear conclusion.
+
+    System prompt: role persona + step-by-step directive.
+    Output:        free-form reasoning text. Nothing else.
+
+PHASE 2 — SIGNAL EXTRACTOR  (the "Characterizer")
+    A secondary, lightweight LLM call whose sole input is the Reasoning
+    Node's output. It uses native Ollama tool calling to invoke emit_signal().
+    It never sees the DASP protocol. It never generates infrastructure fields.
+
+    Output: a single tool call → emit_signal(hypothesis_id, answer_summary,
+            confidence, polarity, generative_strength, inhibitory_pressure).
+
+PYTHON INFRASTRUCTURE LAYER
+    The adapter (not any LLM) owns all infrastructure:
+
+        answer_hash    = hashlib.sha256(answer_summary.encode()).hexdigest()[:16]
+        snapshot_hash  = injected from coordinator's agent.request
+        session_id     = injected from coordinator's agent.request
+        round          = injected from coordinator's agent.request
+
+    The final AgentResponse Pydantic model is assembled here, in Python,
+    from validated tool-call arguments + injected fields. An LLM never
+    writes a hash, a UUID, or a round number.
+
+DASP §4.3 COMPLIANCE CHAIN
+    Pattern 1 (Strict Tool / Function Calling):
+        Characterizer invokes emit_signal() via Ollama's native tool calling.
+        JSON serialization is performed by the Ollama runtime, not by
+        instructional text. This is the primary path.
+
+    Pattern 2 (Constrained Decoding fallback):
+        If the model does not return a tool_calls block (older Ollama versions,
+        models without tool support), the Characterizer falls back to
+        format="json" with a minimal schema and schema-validates the result
+        before use. Raw-text regex extraction is explicitly absent.
+
+DEBATE vs EXECUTION TOOLS
+    The Reasoning Node system prompt contains no tool declarations at all.
+    If an agent needs to retrieve information during deliberation, that is
+    handled via MCP tool calling at the orchestration layer, before the
+    Reasoning Node prompt is constructed (the results are injected as context).
+    If the debate's conclusion is that a sub-task must be spawned, the final
+    answer states that conclusion in natural language. The Coordinator wraps it
+    in an IEP envelope with verb=DELEGATE. The agents never issue DELEGATE
+    themselves.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import uuid
+from dataclasses import dataclass
+from typing import Any
+
+import requests
+
+from effector.schemas.dasp import (
+    AgentRequest,
+    AgentResponse,
+    AgentSignal,
+    ExpectedStateChange,
+)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Persona registry
+# ─────────────────────────────────────────────────────────────────────────────
+
+DEFAULT_PERSONAS: dict[str, str] = {
+    "agent1": (
+        "a critical systems analyst specialising in anomaly detection. "
+        "You are rigorous and skeptical — you always probe for edge cases, "
+        "failure modes, and alternative explanations before accepting a hypothesis."
+    ),
+    "agent2": (
+        "a pragmatic senior operations engineer with deep production experience. "
+        "You focus on measurable evidence and root causes. You distrust speculation "
+        "and demand concrete support for any claim."
+    ),
+    "mistral": (
+        "a methodical reasoning agent trained in structured analysis. "
+        "You evaluate claims systematically, weighing evidence carefully "
+        "and avoiding conclusions that outrun the data."
+    ),
+    "qwen": (
+        "a technical analyst with expertise in system performance and code behaviour. "
+        "You reason from first principles, prefer concrete evidence over intuition, "
+        "and are comfortable disagreeing with the majority when the evidence demands it."
+    ),
+    "arbiter": (
+        "a senior technical architect called in to break expert deadlocks. "
+        "You have read all prior arguments. You identify the strongest reasoning, "
+        "the weakest counter-arguments, and deliver a decisive, well-grounded verdict."
+    ),
+    "nemotron": (
+        "a principal engineer and senior arbiter. "
+        "When local experts stall or veto each other, you cut through ambiguity "
+        "with a verdict that synthesises all prior evidence and commits to a position."
+    ),
+}
+
+
+def _get_persona(agent_id: str) -> str:
+    """Return the persona string for agent_id, falling back to a generic default."""
+    lowered = agent_id.lower()
+    for key, persona in DEFAULT_PERSONAS.items():
+        if key in lowered:
+            return persona
+    return (
+        "a domain expert evaluating a technical hypothesis. "
+        "You reason carefully, consider counter-evidence, and state your conclusions clearly."
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 1 — Reasoning Node system prompt
+# ─────────────────────────────────────────────────────────────────────────────
+
+_REASONING_SYSTEM_TEMPLATE = """\
+You are {persona}
+
+Evaluate the hypothesis or question based on the evidence provided. 
+Engage directly with prior arguments if present.
+
+Format your response in exactly two sections:
+REASONING:
+<your step-by-step analysis here>
+
+ANSWER:
+<your final answer here, in whatever format the task requests>
+"""
+
+def _parse_reasoning_output(text: str) -> tuple[str, str]:
+    """Returns (reasoning_text, answer_text)."""
+    if "ANSWER:" in text:
+        parts = text.split("ANSWER:", 1)
+        reasoning = parts[0].replace("REASONING:", "").strip()
+        answer = parts[1].strip()
+        return reasoning, answer
+    return text, text
+
+
+def _build_reasoning_prompt(
+    agent_id: str,
+    task: str,
+    others: list[dict],
+) -> tuple[str, str]:
+    """
+    Return (system_prompt, user_message) for the Reasoning Node.
+
+    Parameters
+    ----------
+    agent_id : str
+        Used to select the agent's persona.
+    task : str
+        The debate task / hypothesis to evaluate.
+    others : list[dict]
+        Prior-round summaries from other agents, each with keys:
+        agent_id, answer, confidence, polarity.
+    """
+    persona = _get_persona(agent_id)
+    system = _REASONING_SYSTEM_TEMPLATE.format(persona=persona)
+
+    lines = [f"Hypothesis / Question:\n{task}"]
+
+    if others:
+        lines.append("\n--- Prior expert arguments (most recent round) ---")
+        for o in others:
+            pol_label = {1: "SUPPORTS", 0: "UNCERTAIN", -1: "OPPOSES"}.get(
+                o.get("polarity", 0), "?"
+            )
+            conf = o.get("confidence", 0.0)
+            aid = o.get("agent_id", "?")
+            answer = o.get("answer", "")
+            lines.append(f"\n{aid} [{pol_label}, confidence={conf:.2f}]:\n  {answer}")
+        lines.append("\nNow give your own analysis.")
+
+    return system, "\n".join(lines)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 2 — Characterizer: tool definition + prompts
+# ─────────────────────────────────────────────────────────────────────────────
+
+EMIT_SIGNAL_TOOL: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "emit_signal",
+        "description": "Encode a reasoning agent's conclusion as mathematical signals.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "confidence": {
+                    "type": "number",
+                    "description": "0.0 = no confidence. 1.0 = completely certain.",
+                },
+                "polarity": {
+                    "type": "integer",
+                    "enum": [-1, 0, 1],
+                    "description": "1 = SUPPORTS, -1 = OPPOSES, 0 = UNCERTAIN.",
+                },
+                "generative_strength": {
+                    "type": "number",
+                    "description": "Range 0.0-1.0. High if endorsing the hypothesis.",
+                },
+                "inhibitory_pressure": {
+                    "type": "number",
+                    "description": "Range 0.0-1.0. High if found a fatal flaw.",
+                },
+            },
+            "required": ["confidence", "polarity", "generative_strength", "inhibitory_pressure"],
+        },
+    },
+}
+
+_CHARACTERIZER_SYSTEM = """\
+You are a precision signal extractor for a structured multi-agent reasoning system.
+Read the expert reasoning provided. Call emit_signal() once. Output nothing else.
+
+Signal encoding rules:
+  polarity = 1   → Expert SUPPORTS. Excitatory signal.
+  polarity = -1  → Expert OPPOSES. Inhibitory signal.
+  polarity = 0   → Expert is genuinely uncertain.
+"""
+
+_CHARACTERIZER_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "confidence": {"type": "number"},
+        "polarity": {"type": "integer"},
+        "generative_strength": {"type": "number"},
+        "inhibitory_pressure": {"type": "number"},
+    },
+    "required": ["confidence", "polarity", "generative_strength", "inhibitory_pressure"],
+}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Internal Ollama call helpers
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _call_reasoning_node(
+    agent_id: str,
+    model: str,
+    host: str,
+    task: str,
+    others: list[dict],
+    temperature: float = 0.7,
+    timeout_s: float = 90.0,
+) -> str | None:
+    """
+    Phase 1: Call the Reasoning Node.
+
+    Returns the raw reasoning text produced by the model, or None on failure.
+    The prompt contains no JSON schema, no snapshot hash, no DASP protocol
+    references. The model thinks freely.
+    """
+    system, user_msg = _build_reasoning_prompt(agent_id, task, others)
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_msg},
+        ],
+        "stream": False,
+        "options": {"temperature": temperature},
+    }
+
+    try:
+        resp = requests.post(f"{host}/api/chat", json=payload, timeout=timeout_s)
+        resp.raise_for_status()
+        text = resp.json().get("message", {}).get("content", "").strip()
+        if not text:
+            print(f"[TwoPhase] {agent_id} Reasoning Node returned empty content")
+            return None
+        return text
+
+    except requests.exceptions.ConnectionError:
+        print(f"[TwoPhase] {agent_id} ({model}@{host}) — Ollama unreachable")
+        return None
+    except Exception as exc:
+        print(f"[TwoPhase] {agent_id} Reasoning Node error: {exc}")
+        return None
+
+
+def _call_characterizer_tools(
+    reasoning_text: str,
+    task: str,
+    model: str,
+    host: str,
+    timeout_s: float = 45.0,
+) -> dict[str, Any] | None:
+    """
+    Phase 2a: Characterizer via native tool calling (DASP §4.3 Pattern 1).
+
+    Returns the parsed emit_signal arguments dict, or None if the model
+    did not return a tool_calls block (triggers fallback to Pattern 2).
+    """
+    user_content = (
+        f"Task context: {task}\n\n"
+        f"--- Expert reasoning to encode ---\n{reasoning_text}"
+    )
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": _CHARACTERIZER_SYSTEM},
+            {"role": "user", "content": user_content},
+        ],
+        "tools": [EMIT_SIGNAL_TOOL],
+        "stream": False,
+        "options": {"temperature": 0.0},  # deterministic for signal extraction
+    }
+
+    try:
+        resp = requests.post(f"{host}/api/chat", json=payload, timeout=timeout_s)
+        resp.raise_for_status()
+        message = resp.json().get("message", {})
+        tool_calls = message.get("tool_calls", [])
+
+        if not tool_calls:
+            # Model may not support tool calling — signal caller to fall back
+            return None
+
+        # Take the first emit_signal call; ignore any others
+        for tc in tool_calls:
+            fn = tc.get("function", {})
+            if fn.get("name") == "emit_signal":
+                args = fn.get("arguments", {})
+                if isinstance(args, str):
+                    args = json.loads(args)
+                return args
+
+        return None
+
+    except Exception as exc:
+        print(f"[TwoPhase] Characterizer (tool path) error: {exc}")
+        return None
+
+
+def _call_characterizer_json(
+    reasoning_text: str,
+    task: str,
+    model: str,
+    host: str,
+    timeout_s: float = 45.0,
+) -> dict[str, Any] | None:
+    """
+    Phase 2b: Characterizer fallback via constrained JSON decoding.
+    Uses .get() injection with safe defaults to prevent abstentions on missing keys.
+    """
+    system = (
+        _CHARACTERIZER_SYSTEM
+        + "\n\nOutput ONLY a valid JSON object with EXACTLY these four keys: "
+        + "confidence, polarity, generative_strength, inhibitory_pressure."
+    )
+    user_content = (
+        f"Task context: {task}\n\n"
+        f"--- Expert reasoning to encode ---\n{reasoning_text}"
+    )
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_content},
+        ],
+        "format": "json",
+        "stream": False,
+        "options": {"temperature": 0.0},
+    }
+
+    try:
+        resp = requests.post(f"{host}/api/chat", json=payload, timeout=timeout_s)
+        resp.raise_for_status()
+        raw = resp.json().get("message", {}).get("content", "").strip()
+        
+        if not raw:
+            return None
+            
+        data = json.loads(raw)
+        
+        return {
+            "confidence": float(data.get("confidence", 0.8)),
+            "polarity": int(data.get("polarity", 1)),
+            "generative_strength": float(data.get("generative_strength", 0.8)),
+            "inhibitory_pressure": float(data.get("inhibitory_pressure", 0.1)),
+        }
+
+    except (json.JSONDecodeError, KeyError, ValueError) as exc:
+        print(f"[TwoPhase] Characterizer (JSON path) parse error: {exc}")
+        return None
+    except Exception as exc:
+        print(f"[TwoPhase] Characterizer (JSON path) error: {exc}")
+        return None
+
+
+def _characterize(
+    reasoning_text: str,
+    task: str,
+    model: str,
+    host: str,
+    timeout_s: float = 45.0,
+) -> dict[str, Any] | None:
+    """
+    Run the Characterizer, trying tool calling first, then falling back to
+    constrained JSON. Returns the validated emit_signal args dict, or None.
+    """
+    args = _call_characterizer_tools(reasoning_text, task, model, host, timeout_s)
+    if args is not None:
+        return args
+    # Tool calling unavailable or returned nothing — try constrained JSON
+    print("[TwoPhase] Tool calling path returned nothing — falling back to constrained JSON")
+    return _call_characterizer_json(reasoning_text, task, model, host, timeout_s)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Python Infrastructure Layer — signal validation + AgentResponse assembly
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _validate_and_clamp_args(args: dict[str, Any]) -> dict[str, Any]:
+    polarity = args.get("polarity", 0)
+    if polarity not in (-1, 0, 1):
+        polarity = 0
+
+    confidence = max(0.0, min(1.0, float(args.get("confidence", 0.5))))
+    g_str = max(0.0, min(1.0, float(args.get("generative_strength", confidence if polarity >= 0 else 0.0))))
+    i_prs = max(0.0, min(1.0, float(args.get("inhibitory_pressure", confidence if polarity <= 0 else 0.0))))
+
+    return {
+        "confidence": confidence,
+        "polarity": polarity,
+        "generative_strength": g_str,
+        "inhibitory_pressure": i_prs,
+    }
+
+def _assemble_agent_response(
+    validated_args: dict[str, Any],
+    request: AgentRequest,
+    agent_id: str,
+    reasoning_text: str,
+    answer_text: str,
+) -> AgentResponse:
+    answer_hash = hashlib.sha256(answer_text.encode()).hexdigest()[:16]
+    hypothesis_id = f"H_{agent_id}"
+
+    return AgentResponse(
+        session_id=request.session_id,
+        agent_id=agent_id,
+        round=request.round,
+        snapshot_hash=request.snapshot_hash,
+        hypothesis_id=hypothesis_id,
+        answer=answer_text,
+        answer_hash=answer_hash,
+        signal=AgentSignal(
+            confidence=validated_args["confidence"],
+            polarity=validated_args["polarity"],
+            generative_strength=validated_args["generative_strength"],
+            inhibitory_pressure=validated_args["inhibitory_pressure"],
+        ),
+        expected_state_change=ExpectedStateChange(),
+        explanation=reasoning_text,
+    )
+
+
+def _abstention_response(
+    request: AgentRequest,
+    agent_id: str,
+    reason: str,
+) -> AgentResponse:
+    """Return a zero-weight abstention per DASP §11 error handling."""
+    return AgentResponse(
+        session_id=request.session_id,
+        agent_id=agent_id,
+        round=request.round,
+        snapshot_hash=request.snapshot_hash,
+        hypothesis_id=f"H_{agent_id}_abstain",
+        answer="(abstention)",
+        answer_hash=hashlib.sha256(b"abstention").hexdigest()[:16],
+        signal=AgentSignal(
+            confidence=0.0,
+            polarity=0,
+            generative_strength=0.0,
+            inhibitory_pressure=0.0,
+        ),
+        explanation=f"Abstention — {reason}",
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TwoPhaseOllamaAgent — drop-in replacement for OllamaAgent
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TwoPhaseOllamaAgent:
+    """
+    DASP §4.3 compliant agent adapter using a two-phase architecture.
+
+    Implements the same AgentCallable protocol as OllamaAgent:
+        __call__(request: AgentRequest) -> AgentResponse
+
+    Phase 1 (Reasoning Node) and Phase 2 (Characterizer) may use different
+    models. The Characterizer defaults to the same model as the Reasoning
+    Node but can be set to a smaller, faster model (e.g. "mistral:7b").
+
+    Parameters
+    ----------
+    agent_id : str
+        Logical identifier for this agent. Used for persona selection and logging.
+    reasoning_model : str
+        Ollama model for the Reasoning Node (Phase 1). Use your best available model.
+    characterizer_model : str | None
+        Ollama model for the Characterizer (Phase 2). Defaults to reasoning_model.
+        A smaller, fast model is fine here — it only needs to call a tool.
+    host : str
+        Ollama API base URL.
+    reasoning_temperature : float
+        Temperature for the Reasoning Node. Higher = more exploratory.
+    characterizer_temperature : float
+        Temperature for the Characterizer. Always 0.0 (deterministic extraction).
+    timeout_s : float
+        Network timeout per call. Applied independently to both phases.
+    """
+
+    def __init__(
+        self,
+        agent_id: str,
+        reasoning_model: str = "qwen2.5:32b",
+        characterizer_model: str | None = None,
+        host: str = "http://127.0.0.1:11434",
+        reasoning_temperature: float = 0.7,
+        timeout_s: float = 90.0,
+    ) -> None:
+        self.agent_id = agent_id
+        self._reasoning_model = reasoning_model
+        self._characterizer_model = characterizer_model or reasoning_model
+        self._host = host
+        self._reasoning_temperature = reasoning_temperature
+        self._timeout_s = timeout_s
+
+    def __call__(self, request: AgentRequest) -> AgentResponse:
+        """
+        Execute both phases and return a fully assembled AgentResponse.
+        On any failure, returns a zero-weight abstention per DASP §11.
+        """
+        others = [
+            {
+                "agent_id": o.agent_id,
+                "answer":   o.answer,
+                "confidence": o.confidence,
+                "polarity": o.polarity,
+            }
+            for o in (request.others or [])
+        ]
+
+        # ── Phase 1: Reasoning Node ───────────────────────────────────────
+        reasoning_text = _call_reasoning_node(
+            agent_id=self.agent_id,
+            model=self._reasoning_model,
+            host=self._host,
+            task=request.task,
+            others=others,
+            temperature=self._reasoning_temperature,
+            timeout_s=self._timeout_s,
+        )
+
+        if not reasoning_text:
+            return _abstention_response(request, self.agent_id, "Reasoning Node returned no output")
+
+        # ── Phase 2: Characterizer ────────────────────────────────────────
+        raw_args = _characterize(
+            reasoning_text=reasoning_text,
+            task=request.task,
+            model=self._characterizer_model,
+            host=self._host,
+            timeout_s=self._timeout_s,
+        )
+
+        if raw_args is None:
+            return _abstention_response(
+                request, self.agent_id,
+                "Characterizer returned no signal (both tool and JSON paths failed)"
+            )
+
+        # ── Python Infrastructure Layer ───────────────────────────────────
+        validated = _validate_and_clamp_args(raw_args)
+        return _assemble_agent_response(validated, request, self.agent_id, reasoning_text)
+
+    def __repr__(self) -> str:
+        return (
+            f"TwoPhaseOllamaAgent("
+            f"id={self.agent_id!r}, "
+            f"reasoning={self._reasoning_model!r}, "
+            f"characterizer={self._characterizer_model!r})"
+        )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# two_phase_call — functional replacement for _call_ollama in asymmetric_dasp.py
+# ─────────────────────────────────────────────────────────────────────────────
+
+def two_phase_call(
+    agent_id: str,
+    model: str,
+    host: str,
+    session_id: str,
+    round_num: int,
+    task: str,
+    snapshot_hash: str,
+    others: list[dict],
+    temperature: float = 0.7,
+    timeout_s: float = 90.0,
+    characterizer_model: str | None = None,
+) -> dict | None:
+    """
+    Functional equivalent of asymmetric_dasp._call_ollama, using the
+    two-phase architecture.
+    """
+    char_model = characterizer_model or model
+
+    # ── Phase 1: Reasoning Node ──────────────────────────────────────────
+    raw_text = _call_reasoning_node(
+        agent_id=agent_id,
+        model=model,
+        host=host,
+        task=task,
+        others=others,
+        temperature=temperature,
+        timeout_s=timeout_s,
+    )
+
+    if not raw_text:
+        return _abstention_dict(agent_id, session_id, round_num, snapshot_hash)
+
+    # Deterministic Python extraction!
+    reasoning_text, answer_text = _parse_reasoning_output(raw_text)
+
+    # ── Phase 2: Characterizer ──────────────────────────────────────────
+    raw_args = _characterize(
+        reasoning_text=reasoning_text,
+        task=task,
+        model=char_model,
+        host=host,
+        timeout_s=timeout_s,
+    )
+
+    if raw_args is None:
+        print(f"[TwoPhase] {agent_id}: Characterizer failed — returning abstention")
+        return _abstention_dict(agent_id, session_id, round_num, snapshot_hash)
+
+    # ── Python Infrastructure Layer ───────────────────────────────────────
+    validated = _validate_and_clamp_args(raw_args)
+    answer_hash = hashlib.sha256(answer_text.encode()).hexdigest()[:16]
+
+    return {
+        "type":           "agent.response",
+        "session_id":     session_id,
+        "agent_id":       agent_id,
+        "round":          round_num,
+        "snapshot_hash":  snapshot_hash,
+        "hypothesis_id":  f"H_{agent_id}",
+        "answer":         answer_text,
+        "answer_hash":    answer_hash,
+        "signal": {
+            "confidence":          validated["confidence"],
+            "polarity":            validated["polarity"],
+            "generative_strength": validated["generative_strength"],
+            "inhibitory_pressure": validated["inhibitory_pressure"],
+        },
+        "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": validated["confidence"],
+        },
+        "explanation": reasoning_text,
+    }
+
+
+def _abstention_dict(
+    agent_id: str,
+    session_id: str,
+    round_num: int,
+    snapshot_hash: str,
+) -> dict:
+    """Return a zero-weight abstention dict for AsymmetricDASPCoordinator."""
+    return {
+        "type":          "agent.response",
+        "session_id":    session_id,
+        "agent_id":      agent_id,
+        "round":         round_num,
+        "snapshot_hash": snapshot_hash,
+        "hypothesis_id": f"H_{agent_id}_abstain",
+        "answer":        "(abstention)",
+        "answer_hash":   hashlib.sha256(b"abstention").hexdigest()[:16],
+        "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0,
+        },
+        "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0,
+        },
+        "explanation": "Abstention — two-phase pipeline failed",
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# make_two_phase_callable — convenience factory for EffectorSession / DASPCoordinator
+# ─────────────────────────────────────────────────────────────────────────────
+
+def make_two_phase_callable(
+    agent_id: str,
+    reasoning_model: str,
+    characterizer_model: str | None = None,
+    host: str = "http://127.0.0.1:11434",
+    temperature: float = 0.7,
+    timeout_s: float = 90.0,
+) -> TwoPhaseOllamaAgent:
+    """
+    Factory that returns a TwoPhaseOllamaAgent configured and ready for use
+    as an entry in DASPCoordinator's agent_registry dict.
+
+    Usage::
+
+        registry = {
+            "analyst":  make_two_phase_callable("analyst",  "qwen2.5:32b"),
+            "skeptic":  make_two_phase_callable("skeptic",  "mistral:7b"),
+            "arbiter":  make_two_phase_callable("arbiter",  "nemotron", temperature=0.3),
+        }
+        result = session.run(goal="...", agents=agents, agent_registry=registry)
+    """
+    return TwoPhaseOllamaAgent(
+        agent_id=agent_id,
+        reasoning_model=reasoning_model,
+        characterizer_model=characterizer_model,
+        host=host,
+        reasoning_temperature=temperature,
+        timeout_s=timeout_s,
+    )

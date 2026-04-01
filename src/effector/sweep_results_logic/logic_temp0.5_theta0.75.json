@@ -1,0 +1,114 @@
+{
+  "session_id": "291400e5-eef3-4107-980c-88b502214ab4",
+  "final_answer": "{\"Alice\": \"knight\", \"Bob\": \"knight\", \"Charlie\": \"knave\"}",
+  "consensus_score": 1.0,
+  "rounds": 1,
+  "snapshot_hash": "639319ccbd0439d250d66a8dc2dda7b34cd57446c8df91a82590b41fe2a0180e",
+  "snapshot_timestamp": "2026-04-01T22:03:45.891516+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "consensus",
+  "winning_hypothesis": "H_agent1",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H_agent1": {
+      "S_g": 1.0,
+      "S_i": 0.0,
+      "S_net": 1.0
+    },
+    "H_agent2": {
+      "S_g": 0.95,
+      "S_i": 0.0,
+      "S_net": 0.95
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "291400e5-eef3-4107-980c-88b502214ab4",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "291400e5-eef3-4107-980c-88b502214ab4",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "639319ccbd0439d250d66a8dc2dda7b34cd57446c8df91a82590b41fe2a0180e",
+          "hypothesis_id": "H_agent1",
+          "answer": "{\"Alice\": \"knight\", \"Bob\": \"knight\", \"Charlie\": \"knave\"}",
+          "answer_hash": "5fe6f07a537e342d",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 1.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "1. We start by assuming that Alice could be either a knight or a knave. If Alice is a knight, her statement about Bob being a knave would be true, and Bob would indeed be a knave. On the other hand, if Alice is a knave, her statement would be false, but since there are only two types of inhabitants on the island (knight or knave), this would mean Bob is a knight.\n2. Bob's statement about Alice and Charlie being of the same type is consistent with either scenario: if Alice is a knight, then both Alice and Charlie would be knights since they are the same person; if Alice is a knave, then both Alice and Charlie would also be knaves (since a liar would claim that everyone is like them).\n3. Charlie's statement about Alice being a knave creates a contradiction in our reasoning if Alice is a knight. However, this contradiction can be resolved by considering the possibility that Charlie is a knave and therefore lying about Alice's type.\n4. If Charlie is a knave, then his statement would be false, meaning Alice is actually a knight. This makes Bob's statement true (Alice and Charlie are indeed of the same type \u2013 both knights).\n5. With this information, we can conclude that Alice is a knight, Bob is also a knight since they are of the same type, and Charlie must be a knave."
+        },
+        {
+          "type": "agent.response",
+          "session_id": "291400e5-eef3-4107-980c-88b502214ab4",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "639319ccbd0439d250d66a8dc2dda7b34cd57446c8df91a82590b41fe2a0180e",
+          "hypothesis_id": "H_agent2",
+          "answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+          "answer_hash": "d794390ab92e91fd",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 0.95,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "To solve this puzzle, we need to evaluate each statement under the assumption that each person is either a knight (truth-teller) or a knave (liar). We will check for consistency across all statements.\n\n1. Assume Alice is a knight.\n   - If Alice is a knight, her statement \"Bob is a knave\" must be true, so Bob is a knave.\n   - Since Bob is a knave, his statement \"Alice and Charlie are of the same type\" must be false (since he lies). This means Alice and Charlie are not the same type. But Alice is a knight by our assumption, so Charlie must be a knave.\n   - If Charlie is a knave, his statement \"Alice is a knave\" would be false, which aligns with Alice being a knight.\n\n2. Assume Alice is a knave.\n   - If Alice is a knave, her statement \"Bob is a knave\" must be false (since she lies), so Bob must be a knight.\n   - Since Bob is a knight, his statement \"Alice and Charlie are of the same type\" must be true (since he tells the truth). This means Alice and Charlie are the same type. But Alice is a knave by our assumption, so Charlie would also have to be a knave.\n   - If Charlie is a knave, his statement \"Alice is a knave\" would be true, which contradicts him being a liar.\n\nFrom this analysis, only the first scenario (where Alice is a knight) does not lead to contradictions. Hence, the consistent solution is:\n- Alice: Knight\n- Bob: Knave\n- Charlie: Knave"
+        }
+      ],
+      "accumulators": {
+        "H_agent1": {
+          "S_g": 1.0,
+          "S_i": 0.0,
+          "S_net": 1.0
+        },
+        "H_agent2": {
+          "S_g": 0.95,
+          "S_i": 0.0,
+          "S_net": 0.95
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 59.75,
+  "_iep_validation": {
+    "envelope_id": "4c7ec0d2-6813-4f03-a4c2-c2606ce0d613",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=639319ccbd04... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-01T22:03:45.893064+00:00"
+  }
+}

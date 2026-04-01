@@ -1,0 +1,235 @@
+{
+  "session_id": "14fb1cca-c98d-439b-8627-c2c838d9c6ab",
+  "final_answer": "(abstention)",
+  "consensus_score": 0.0,
+  "rounds": 3,
+  "snapshot_hash": "1445a4c1aaafce3b7f11eaaf782d2ca36ce711befcb1ff3b7c25191aa34680e0",
+  "snapshot_timestamp": "2026-04-01T22:27:01.684141+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": true,
+  "terminated_reason": "escalated_no_consensus",
+  "winning_hypothesis": "H_agent1_abstain",
+  "disagreement_score": 0.0,
+  "escalations": [
+    {
+      "round": 2,
+      "trigger": "stall",
+      "tier_from": "local",
+      "tier_to": "qwen3:32b",
+      "timestamp": "2026-04-01T22:26:01.681560+00:00"
+    }
+  ],
+  "signal_manifold": {
+    "H_agent1_abstain": {
+      "S_g": 0.0,
+      "S_i": 0.0,
+      "S_net": 0.0
+    },
+    "H_agent2": {
+      "S_g": 0.0,
+      "S_i": 0.0,
+      "S_net": 0.0
+    },
+    "H_arbiter_abstain": {
+      "S_g": 0.0,
+      "S_i": 0.0,
+      "S_net": 0.0
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "14fb1cca-c98d-439b-8627-c2c838d9c6ab",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "14fb1cca-c98d-439b-8627-c2c838d9c6ab",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "1445a4c1aaafce3b7f11eaaf782d2ca36ce711befcb1ff3b7c25191aa34680e0",
+          "hypothesis_id": "H_agent1_abstain",
+          "answer": "(abstention)",
+          "answer_hash": "f45d6797c6e658ea",
+          "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0
+          },
+          "explanation": "Abstention \u2014 two-phase pipeline failed"
+        },
+        {
+          "type": "agent.response",
+          "session_id": "14fb1cca-c98d-439b-8627-c2c838d9c6ab",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "1445a4c1aaafce3b7f11eaaf782d2ca36ce711befcb1ff3b7c25191aa34680e0",
+          "hypothesis_id": "H_agent2",
+          "answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+          "answer_hash": "d794390ab92e91fd",
+          "signal": {
+            "confidence": 0.8,
+            "polarity": 1,
+            "generative_strength": 0.8,
+            "inhibitory_pressure": 0.1
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.8
+          },
+          "explanation": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}"
+        }
+      ],
+      "accumulators": {
+        "H_agent1_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        },
+        "H_agent2": {
+          "S_g": 0.6400000000000001,
+          "S_i": 0.0,
+          "S_net": 0.6400000000000001
+        }
+      }
+    },
+    {
+      "session_id": "14fb1cca-c98d-439b-8627-c2c838d9c6ab",
+      "round": 2,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "14fb1cca-c98d-439b-8627-c2c838d9c6ab",
+          "agent_id": "agent1",
+          "round": 2,
+          "snapshot_hash": "1445a4c1aaafce3b7f11eaaf782d2ca36ce711befcb1ff3b7c25191aa34680e0",
+          "hypothesis_id": "H_agent1_abstain",
+          "answer": "(abstention)",
+          "answer_hash": "f45d6797c6e658ea",
+          "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0
+          },
+          "explanation": "Abstention \u2014 two-phase pipeline failed"
+        },
+        {
+          "type": "agent.response",
+          "session_id": "14fb1cca-c98d-439b-8627-c2c838d9c6ab",
+          "agent_id": "agent2",
+          "round": 2,
+          "snapshot_hash": "1445a4c1aaafce3b7f11eaaf782d2ca36ce711befcb1ff3b7c25191aa34680e0",
+          "hypothesis_id": "H_agent2",
+          "answer": "```json\n{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}\n```",
+          "answer_hash": "156ca87e3906f511",
+          "signal": {
+            "confidence": 0.8,
+            "polarity": 1,
+            "generative_strength": 0.8,
+            "inhibitory_pressure": 0.1
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.8
+          },
+          "explanation": "Assume Alice is a knight: her statement \"Bob is a knave\" is true. Thus, Bob is a knave, so his statement that Alice and Charlie are the same type is false, meaning Charlie must be different from Alice. Since Alice is a knight, Charlie is a knave. Charlie's statement \"Alice is a knave\" would then be a lie, confirming Alice is a knight.\n\nIf we assume Alice is a knave: her statement is false, making Bob a knight. Bob's truthful statement implies Charlie is also a knight. But Charlie's statement that Alice is a knave would be true, contradicting our assumption that he's a knight (who tells the truth). Thus, this scenario is impossible."
+        }
+      ],
+      "accumulators": {
+        "H_agent1_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        },
+        "H_agent2": {
+          "S_g": 0.6400000000000001,
+          "S_i": 0.0,
+          "S_net": 0.6400000000000001
+        }
+      }
+    },
+    {
+      "session_id": "14fb1cca-c98d-439b-8627-c2c838d9c6ab",
+      "round": 3,
+      "tier": "cloud_arbiter",
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "14fb1cca-c98d-439b-8627-c2c838d9c6ab",
+          "agent_id": "arbiter",
+          "round": 3,
+          "snapshot_hash": "1445a4c1aaafce3b7f11eaaf782d2ca36ce711befcb1ff3b7c25191aa34680e0",
+          "hypothesis_id": "H_arbiter_abstain",
+          "answer": "(abstention)",
+          "answer_hash": "f45d6797c6e658ea",
+          "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0
+          },
+          "explanation": "Abstention \u2014 two-phase pipeline failed"
+        }
+      ],
+      "accumulators": {
+        "H_agent1_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        },
+        "H_agent2": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        },
+        "H_arbiter_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 299.06,
+  "_iep_validation": {
+    "envelope_id": "a0cc4d2c-0d39-4c43-a17c-e532166052d7",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=1445a4c1aaaf... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-01T22:27:01.689056+00:00"
+  }
+}

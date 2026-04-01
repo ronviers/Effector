@@ -1,0 +1,114 @@
+{
+  "session_id": "2400ebc8-92fb-43cc-803d-1ca0550f5985",
+  "final_answer": "We need to solve the puzzle. Let's denote truth values: K = knight (truth), N = knave (lie). Statements:\n\n1. A says \"B is a knave.\" So A's statement is true iff B is knave.\n\n2. B says \"A and C are of the same type.\" So B's statement true iff (A type == C type).\n\n3. C says \"A is a knave.\" So C's statement true iff A is knave.\n\nWe need consistent assignment.\n\nLet's brute think.\n\nCase A = knight (truthful). Then A's statement true => B is knave. So B = knave.\n\nB knave => B's statement false. B's statement: \"A and C are same type.\" Since B lies, the statement is false => A and C are NOT same type. So A and C different types. A is knight, so C must be knave.\n\nC knave => C's statement false. C says \"A is a knave.\" False => A is not knave => A is knight. Consistent with A knight. So we have A knight, B knave, C knave. Check: B knave => statement false: A and C same? A knight, C knave => not same => false, good. C knave => statement false: A is knave? A knight => false, good. All consistent.\n\nNow check alternative: A = knave (liar). Then A's statement false => \"B is a knave\" false => B is not knave => B is knight.\n\nB knight => B's statement true => \"A and C are same type\" true => A and C same type. A is knave, so C must be knave.\n\nC knave => C's statement false => \"A is a knave\" false => A is not knave => A is knight. But we assumed A knave. Contradiction. So only first case works.\n\nThus solution: Alice knight, Bob knave, Charlie knave.\n\nOutput JSON: {\"Alice\":\"knight\",\"Bob\":\"knave\",\"Charlie\":\"knave\"}\n\nMake sure only JSON.\n\n</think>\n{\n  \"Alice\": \"knight\",\n  \"Bob\": \"knave\",\n  \"Charlie\": \"knave\"\n}",
+  "consensus_score": 1.0,
+  "rounds": 1,
+  "snapshot_hash": "9ba2f45b6cb03470c972c3a14e4e234cedadbe927d8e28e1d09dafe55d7c0ba6",
+  "snapshot_timestamp": "2026-04-01T22:21:55.655215+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "consensus",
+  "winning_hypothesis": "H_agent2",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H_agent1": {
+      "S_g": 0.6400000000000001,
+      "S_i": 0.0,
+      "S_net": 0.6400000000000001
+    },
+    "H_agent2": {
+      "S_g": 1.0,
+      "S_i": 0.0,
+      "S_net": 1.0
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "2400ebc8-92fb-43cc-803d-1ca0550f5985",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "2400ebc8-92fb-43cc-803d-1ca0550f5985",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "9ba2f45b6cb03470c972c3a14e4e234cedadbe927d8e28e1d09dafe55d7c0ba6",
+          "hypothesis_id": "H_agent1",
+          "answer": "{\"Alice\": \"knave\", \"Bob\": \"knight\", \"Charlie\": \"knave\"}",
+          "answer_hash": "0e63ed05154d25c3",
+          "signal": {
+            "confidence": 0.8,
+            "polarity": 1,
+            "generative_strength": 0.8,
+            "inhibitory_pressure": 0.1
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.8
+          },
+          "explanation": "The hypothesis presents a classic knight/knave logic puzzle with three agents making statements about each other's types. To evaluate, I must systematically test assignments of truthfulness while checking for consistency. First, I note that any assignment must satisfy all statements under the assumption that knights always tell the truth and knaves always lie. I enumerate possible scenarios, focusing on Alice's claim about Bob. If Alice is a knight, then Bob is a knave; if Alice is a knave, Bob is a knight. This creates two main branches. In the knight-of-Bob branch, Bob's statement forces Alice and Charlie to be the same type, but Charlie's claim about Alice contradicts this, creating a paradox. In the knave-of-Bob branch, Bob's lie causes Alice and Charlie to differ, and Charlie's false claim about Alice aligns with Bob being a knave, resolving all contradictions. Edge cases include scenarios where statements reference each other in loops, which this branch handles by enforcing consistency across all statements. No alternative explanations fit without contradiction, so the knave-of-Bob scenario is uniquely valid."
+        },
+        {
+          "type": "agent.response",
+          "session_id": "2400ebc8-92fb-43cc-803d-1ca0550f5985",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "9ba2f45b6cb03470c972c3a14e4e234cedadbe927d8e28e1d09dafe55d7c0ba6",
+          "hypothesis_id": "H_agent2",
+          "answer": "We need to solve the puzzle. Let's denote truth values: K = knight (truth), N = knave (lie). Statements:\n\n1. A says \"B is a knave.\" So A's statement is true iff B is knave.\n\n2. B says \"A and C are of the same type.\" So B's statement true iff (A type == C type).\n\n3. C says \"A is a knave.\" So C's statement true iff A is knave.\n\nWe need consistent assignment.\n\nLet's brute think.\n\nCase A = knight (truthful). Then A's statement true => B is knave. So B = knave.\n\nB knave => B's statement false. B's statement: \"A and C are same type.\" Since B lies, the statement is false => A and C are NOT same type. So A and C different types. A is knight, so C must be knave.\n\nC knave => C's statement false. C says \"A is a knave.\" False => A is not knave => A is knight. Consistent with A knight. So we have A knight, B knave, C knave. Check: B knave => statement false: A and C same? A knight, C knave => not same => false, good. C knave => statement false: A is knave? A knight => false, good. All consistent.\n\nNow check alternative: A = knave (liar). Then A's statement false => \"B is a knave\" false => B is not knave => B is knight.\n\nB knight => B's statement true => \"A and C are same type\" true => A and C same type. A is knave, so C must be knave.\n\nC knave => C's statement false => \"A is a knave\" false => A is not knave => A is knight. But we assumed A knave. Contradiction. So only first case works.\n\nThus solution: Alice knight, Bob knave, Charlie knave.\n\nOutput JSON: {\"Alice\":\"knight\",\"Bob\":\"knave\",\"Charlie\":\"knave\"}\n\nMake sure only JSON.\n\n</think>\n{\n  \"Alice\": \"knight\",\n  \"Bob\": \"knave\",\n  \"Charlie\": \"knave\"\n}",
+          "answer_hash": "8c37d7f8f0ed0610",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 1.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "We need to solve the puzzle. Let's denote truth values: K = knight (truth), N = knave (lie). Statements:\n\n1. A says \"B is a knave.\" So A's statement is true iff B is knave.\n\n2. B says \"A and C are of the same type.\" So B's statement true iff (A type == C type).\n\n3. C says \"A is a knave.\" So C's statement true iff A is knave.\n\nWe need consistent assignment.\n\nLet's brute think.\n\nCase A = knight (truthful). Then A's statement true => B is knave. So B = knave.\n\nB knave => B's statement false. B's statement: \"A and C are same type.\" Since B lies, the statement is false => A and C are NOT same type. So A and C different types. A is knight, so C must be knave.\n\nC knave => C's statement false. C says \"A is a knave.\" False => A is not knave => A is knight. Consistent with A knight. So we have A knight, B knave, C knave. Check: B knave => statement false: A and C same? A knight, C knave => not same => false, good. C knave => statement false: A is knave? A knight => false, good. All consistent.\n\nNow check alternative: A = knave (liar). Then A's statement false => \"B is a knave\" false => B is not knave => B is knight.\n\nB knight => B's statement true => \"A and C are same type\" true => A and C same type. A is knave, so C must be knave.\n\nC knave => C's statement false => \"A is a knave\" false => A is not knave => A is knight. But we assumed A knave. Contradiction. So only first case works.\n\nThus solution: Alice knight, Bob knave, Charlie knave.\n\nOutput JSON: {\"Alice\":\"knight\",\"Bob\":\"knave\",\"Charlie\":\"knave\"}\n\nMake sure only JSON.\n\n</think>\n{\n  \"Alice\": \"knight\",\n  \"Bob\": \"knave\",\n  \"Charlie\": \"knave\"\n}"
+        }
+      ],
+      "accumulators": {
+        "H_agent1": {
+          "S_g": 0.6400000000000001,
+          "S_i": 0.0,
+          "S_net": 0.6400000000000001
+        },
+        "H_agent2": {
+          "S_g": 1.0,
+          "S_i": 0.0,
+          "S_net": 1.0
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 53.44,
+  "_iep_validation": {
+    "envelope_id": "f5456598-f0f1-4ace-a68f-0146b806f9f3",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=9ba2f45b6cb0... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-01T22:21:55.657219+00:00"
+  }
+}
