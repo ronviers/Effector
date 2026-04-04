@@ -1,0 +1,29 @@
+{
+  "session_id": "synth-balancing-data",
+  "all_rounds": [
+    {
+      "responses": [
+        {
+          "agent_id": "mistral",
+          "explanation": "I strongly oppose this action. The system pressure is at 0.95 and the user is in deep focus. Any disruption right now carries severe risk. Do not proceed.",
+          "signal": { "polarity": -1, "confidence": 0.95, "generative_strength": 0.1, "inhibitory_pressure": 0.95 }
+        },
+        {
+          "agent_id": "qwen",
+          "explanation": "This is a terrible idea. We lack sufficient telemetry to verify the safety of this action, and the thermal alert is active. I am applying an inhibitory veto.",
+          "signal": { "polarity": -1, "confidence": 0.88, "generative_strength": 0.05, "inhibitory_pressure": 0.9 }
+        },
+        {
+          "agent_id": "arbiter",
+          "explanation": "The arguments are completely deadlocked and the data is ambiguous. I cannot make a confident determination either way.",
+          "signal": { "polarity": 0, "confidence": 0.4, "generative_strength": 0.5, "inhibitory_pressure": 0.5 }
+        },
+        {
+          "agent_id": "mistral",
+          "explanation": "We do not know what process is consuming memory. It could be malware, or it could be a critical OS update. We lack the data to act safely. Uncertainty is high.",
+          "signal": { "polarity": 0, "confidence": 0.6, "generative_strength": 0.3, "inhibitory_pressure": 0.3 }
+        }
+      ]
+    }
+  ]
+}
