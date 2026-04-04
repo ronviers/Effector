@@ -403,21 +403,47 @@ def execute_run(
         embedding_host=ollama_host,
     )
 
-    # ── Run debate ────────────────────────────────────────────────────────────
+    # ── Reflex + DASP Orchestration ───────────────────────────────────────────
     t0 = time.monotonic()
+    
+    from effector.rat_store import LocalRATStore
+    from effector.main_loop_reflex import ReflexOrchestrator
+    
+    rat_store = LocalRATStore()
+    orchestrator = ReflexOrchestrator(
+        state_bus=bus,
+        rat_store=rat_store,
+        dasp_run_fn=coordinator.run,
+        embedding_model=embedding_model,
+        ollama_host=ollama_host,
+        rat_similarity_threshold=rat_threshold,
+    )
+
     try:
-        result = coordinator.run(task=task, snapshot_hash=snapshot_hash, state_bus=bus)
+        # The orchestrator handles the routing, the embedding I/O, the reflex 
+        # engine check, the DASP fallback, AND the async RAT issuance.
+        result = orchestrator.handle(
+            task=task,
+            snapshot_hash=snapshot_hash,
+        )
     except Exception as exc:
-        print_error(f"Coordinator error: {exc}")
+        print_error(f"Orchestrator error: {exc}")
         if poller:
             poller.stop()
+        orchestrator.shutdown()
         return 1
     finally:
         if poller:
             poller.stop()
+        orchestrator.shutdown()
 
     elapsed = time.monotonic() - t0
     result["_elapsed_s"] = round(elapsed, 2)
+    
+    # Optional: print the path taken for visibility in your sweep logs
+    if output_format == "pretty" or output_format == "minimal":
+        path_color = "green" if result.get("_path") == "reflex" else "yellow"
+        console.print(f"  [dim]Execution Path: [{path_color}]{result.get('_path', 'unknown').upper()}[/][/dim]")
 
     # ── IEP pipeline (optional) ───────────────────────────────────────────────
     if run_iep:

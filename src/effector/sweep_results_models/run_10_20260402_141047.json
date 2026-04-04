@@ -1,0 +1,114 @@
+{
+  "session_id": "6af243e8-691d-4a13-a99a-f8ed3faf550e",
+  "final_answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+  "consensus_score": 1.0,
+  "rounds": 1,
+  "snapshot_hash": "c793dd3986c63b9f3641815b12441e5850bf4a38856be564b2a50697f47f40b7",
+  "snapshot_timestamp": "2026-04-02T19:11:48.102775+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "consensus",
+  "winning_hypothesis": "H_agent1",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H_agent1": {
+      "S_g": 1.0,
+      "S_i": 0.0,
+      "S_net": 1.0
+    },
+    "H_agent2": {
+      "S_g": 0.6400000000000001,
+      "S_i": 0.0,
+      "S_net": 0.6400000000000001
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "6af243e8-691d-4a13-a99a-f8ed3faf550e",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "6af243e8-691d-4a13-a99a-f8ed3faf550e",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "c793dd3986c63b9f3641815b12441e5850bf4a38856be564b2a50697f47f40b7",
+          "hypothesis_id": "H_agent1",
+          "answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+          "answer_hash": "d794390ab92e91fd",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 1.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "Let me work through the logical possibilities:\n\nLet A, B, C represent whether Alice, Bob, and Charlie are knights (true) or knaves (false).\n\n**Case 1: Alice is a knight (A = true)**\n- Alice's statement \"Bob is a knave\" must be true, so B = false\n- Charlie's statement \"Alice is a knave\" must be false (truthful claim about Alice), so C = false\n- Bob's statement: \"Alice and Charlie are same type\" - with A=true and C=false, this is false. Bob being a knave (B=false) makes this consistent. \u2713\n\n**Case 2: Alice is a knave (A = false)**\n- Alice's statement \"Bob is a knave\" is false, so B = true\n- Charlie's statement \"Alice is a knave\" is true, so C = true\n- Bob's statement: \"Alice and Charlie are same type\" - with A=false and C=true, this is false. But Bob being a knight (B=true) requires his statement to be true. Contradiction! \u2717\n\nTherefore, only Case 1 works: Alice is knight, Bob is knave, Charlie is knave."
+        },
+        {
+          "type": "agent.response",
+          "session_id": "6af243e8-691d-4a13-a99a-f8ed3faf550e",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "c793dd3986c63b9f3641815b12441e5850bf4a38856be564b2a50697f47f40b7",
+          "hypothesis_id": "H_agent2",
+          "answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+          "answer_hash": "d794390ab92e91fd",
+          "signal": {
+            "confidence": 0.8,
+            "polarity": 1,
+            "generative_strength": 0.8,
+            "inhibitory_pressure": 0.1
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.8
+          },
+          "explanation": "We analyze the statements under the assumption that each person is either a knight (always truthful) or a knave (always lying). We test each consistent configuration. The only consistent assignment is Alice = knave, Bob = knight, Charlie = knight. This satisfies:\n- Alice (knave) lies: Bob is not a knave \u2192 Bob is knight \u2713\n- Bob (knight) tells truth: Alice and Charlie are same type? No, Alice knave, Charlie knight \u2192 Bob's statement false, contradiction? Wait: Bob says \"Alice and Charlie are of the same type.\" They are not (knave vs knight), so Bob would be lying, but Bob is knight \u2192 contradiction. Wait need recheck.\nActually, test all cases systematically:\nCase 1: Assume Alice = knight \u2192 then Bob = knave (Alice says Bob is knave). Bob says \"Alice and Charlie same\". Bob lies \u2192 Alice and Charlie differ. Since Alice = knight, Charlie = knave. Check Charlie: knave says \"Alice is knave\" \u2192 false \u2192 Alice is knight \u2713. Bob knave says \"Alice and Charlie same\" \u2192 false (they differ) \u2713. So this works: Alice knight, Bob knave, Charlie knave.\nCase 2: Assume Alice = knave \u2192 Bob = knight. Bob says \"Alice and Charlie same\" \u2192 true \u2192 Alice and Charlie same. Alice knave \u2192 Charlie knave. Charlie knave says \"Alice is knave\" \u2192 true, but knave must lie \u2192 contradiction. So only Case 1 works.\nThus solution: Alice knight, Bob knave, Charlie knave."
+        }
+      ],
+      "accumulators": {
+        "H_agent1": {
+          "S_g": 1.0,
+          "S_i": 0.0,
+          "S_net": 1.0
+        },
+        "H_agent2": {
+          "S_g": 0.6400000000000001,
+          "S_i": 0.0,
+          "S_net": 0.6400000000000001
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 58.2,
+  "_iep_validation": {
+    "envelope_id": "a2bdc310-03b3-4a20-9c1e-75f72d197144",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=c793dd3986c6... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-02T19:11:48.103783+00:00"
+  }
+}

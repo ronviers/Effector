@@ -1,0 +1,186 @@
+{
+  "session_id": "20a14a57-5ec6-4c23-a09c-54cba91eabbb",
+  "final_answer": "```json\n{\n  \"Alice\": \"knight\",\n  \"Bob\": \"knave\",\n  \"Charlie\": \"knave\"\n}\n```",
+  "consensus_score": 0.8075,
+  "rounds": 2,
+  "snapshot_hash": "71e575523dfa74c0c8639f4b142a7e948706f3027f701a391efd55ecd77b7ba9",
+  "snapshot_timestamp": "2026-04-02T21:30:21.137790+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "consensus",
+  "winning_hypothesis": "H_agent2",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H_agent1": {
+      "S_g": 0.6400000000000001,
+      "S_i": 0.0,
+      "S_net": 0.6400000000000001
+    },
+    "H_agent2_abstain": {
+      "S_g": 0.0,
+      "S_i": 0.0,
+      "S_net": 0.0
+    },
+    "H_agent2": {
+      "S_g": 0.8075,
+      "S_i": 0.0,
+      "S_net": 0.8075
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "20a14a57-5ec6-4c23-a09c-54cba91eabbb",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "20a14a57-5ec6-4c23-a09c-54cba91eabbb",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "71e575523dfa74c0c8639f4b142a7e948706f3027f701a391efd55ecd77b7ba9",
+          "hypothesis_id": "H_agent1",
+          "answer": "```json\n{\n  \"Alice\": \"knight\",\n  \"Bob\": \"knave\",\n  \"Charlie\": \"knave\"\n}\n```",
+          "answer_hash": "efa4678c77d5a8ae",
+          "signal": {
+            "confidence": 0.8,
+            "polarity": 1,
+            "generative_strength": 0.8,
+            "inhibitory_pressure": 0.1
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.8
+          },
+          "explanation": "```json\n{\n  \"Alice\": \"knight\",\n  \"Bob\": \"knave\",\n  \"Charlie\": \"knave\"\n}\n```"
+        },
+        {
+          "type": "agent.response",
+          "session_id": "20a14a57-5ec6-4c23-a09c-54cba91eabbb",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "71e575523dfa74c0c8639f4b142a7e948706f3027f701a391efd55ecd77b7ba9",
+          "hypothesis_id": "H_agent2_abstain",
+          "answer": "(abstention)",
+          "answer_hash": "f45d6797c6e658ea",
+          "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0
+          },
+          "explanation": "Abstention \u2014 two-phase pipeline failed"
+        }
+      ],
+      "accumulators": {
+        "H_agent1": {
+          "S_g": 0.6400000000000001,
+          "S_i": 0.0,
+          "S_net": 0.6400000000000001
+        },
+        "H_agent2_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        }
+      }
+    },
+    {
+      "session_id": "20a14a57-5ec6-4c23-a09c-54cba91eabbb",
+      "round": 2,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "20a14a57-5ec6-4c23-a09c-54cba91eabbb",
+          "agent_id": "agent1",
+          "round": 2,
+          "snapshot_hash": "71e575523dfa74c0c8639f4b142a7e948706f3027f701a391efd55ecd77b7ba9",
+          "hypothesis_id": "H_agent1",
+          "answer": "```json\n{\n  \"Alice\": \"knight\",\n  \"Bob\": \"knave\",\n  \"Charlie\": \"knave\"\n}\n```",
+          "answer_hash": "efa4678c77d5a8ae",
+          "signal": {
+            "confidence": 0.8,
+            "polarity": 1,
+            "generative_strength": 0.8,
+            "inhibitory_pressure": 0.1
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.8
+          },
+          "explanation": "The analysis shows that Alice must be a knight because her truthful statement leads to a consistent conclusion about Bob and Charlie both being knaves. The alternative assumption that Alice is a knave results in contradictions."
+        },
+        {
+          "type": "agent.response",
+          "session_id": "20a14a57-5ec6-4c23-a09c-54cba91eabbb",
+          "agent_id": "agent2",
+          "round": 2,
+          "snapshot_hash": "71e575523dfa74c0c8639f4b142a7e948706f3027f701a391efd55ecd77b7ba9",
+          "hypothesis_id": "H_agent2",
+          "answer": "```json\n{\n  \"Alice\": \"knight\",\n  \"Bob\": \"knave\",\n  \"Charlie\": \"knave\"\n}\n```",
+          "answer_hash": "efa4678c77d5a8ae",
+          "signal": {
+            "confidence": 0.95,
+            "polarity": 1,
+            "generative_strength": 0.85,
+            "inhibitory_pressure": 0.1
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.95
+          },
+          "explanation": "1. Assume Alice is a knight. Her statement \"Bob is a knave\" is true, making Bob a knave.\n2. Bob, as a knave, lies. His statement \"Alice and Charlie are the same type\" is false. Since Alice is a knight, Charlie must be a knave (opposite type).\n3. Charlie, as a knave, lies. His statement \"Alice is a knave\" is false, confirming Alice is a knight.\n4. All statements align with these roles: Alice's truth, Bob's lie about types, Charlie's lie about Alice."
+        }
+      ],
+      "accumulators": {
+        "H_agent1": {
+          "S_g": 0.6400000000000001,
+          "S_i": 0.0,
+          "S_net": 0.6400000000000001
+        },
+        "H_agent2_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        },
+        "H_agent2": {
+          "S_g": 0.8075,
+          "S_i": 0.0,
+          "S_net": 0.8075
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 879.89,
+  "_iep_validation": {
+    "envelope_id": "a4ac29eb-fc17-44ea-88ba-992a1a45152b",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=71e575523dfa... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-02T21:30:21.141414+00:00"
+  }
+}

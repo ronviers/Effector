@@ -1,0 +1,114 @@
+{
+  "session_id": "5d492bdc-bb11-4b17-a6b6-7cc72fde3cf8",
+  "final_answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+  "consensus_score": 1.0,
+  "rounds": 1,
+  "snapshot_hash": "f65758dc9ebf2c5037fce312f5bcc7f6c968ac4cc248a29d90d9eb116bb4536a",
+  "snapshot_timestamp": "2026-04-02T19:20:58.647791+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "consensus",
+  "winning_hypothesis": "H_agent1",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H_agent1": {
+      "S_g": 1.0,
+      "S_i": 0.0,
+      "S_net": 1.0
+    },
+    "H_agent2": {
+      "S_g": 0.6400000000000001,
+      "S_i": 0.0,
+      "S_net": 0.6400000000000001
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "5d492bdc-bb11-4b17-a6b6-7cc72fde3cf8",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "5d492bdc-bb11-4b17-a6b6-7cc72fde3cf8",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "f65758dc9ebf2c5037fce312f5bcc7f6c968ac4cc248a29d90d9eb116bb4536a",
+          "hypothesis_id": "H_agent1",
+          "answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+          "answer_hash": "d794390ab92e91fd",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 1.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}"
+        },
+        {
+          "type": "agent.response",
+          "session_id": "5d492bdc-bb11-4b17-a6b6-7cc72fde3cf8",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "f65758dc9ebf2c5037fce312f5bcc7f6c968ac4cc248a29d90d9eb116bb4536a",
+          "hypothesis_id": "H_agent2",
+          "answer": "{\"Alice\": \"knave\", \"Bob\": \"knight\", \"Charlie\": \"knight\"}",
+          "answer_hash": "677e543d4d9dda60",
+          "signal": {
+            "confidence": 0.8,
+            "polarity": 1,
+            "generative_strength": 0.8,
+            "inhibitory_pressure": 0.1
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.8
+          },
+          "explanation": "We assign truth values to each person's statement and test consistency. Let A, B, C denote \"knight\" (true) or \"knave\" (false). Alice's claim \"Bob is a knave\" gives A \u2194 (B = knave). Bob's claim \"Alice and Charlie are of the same type\" gives B \u2194 (A = C). Charlie's claim \"Alice is a knave\" gives C \u2194 (A = knave). Testing A=true leads to contradiction in Bob's statement. Testing A=false yields consistent values: A=false (knave), B=true (knight), C=true (knight). All statements align with their truth/lie roles."
+        }
+      ],
+      "accumulators": {
+        "H_agent1": {
+          "S_g": 1.0,
+          "S_i": 0.0,
+          "S_net": 1.0
+        },
+        "H_agent2": {
+          "S_g": 0.6400000000000001,
+          "S_i": 0.0,
+          "S_net": 0.6400000000000001
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 339.48,
+  "_iep_validation": {
+    "envelope_id": "84b44464-9f17-4cd9-b4b2-381e87d51971",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=f65758dc9ebf... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-02T19:20:58.649824+00:00"
+  }
+}

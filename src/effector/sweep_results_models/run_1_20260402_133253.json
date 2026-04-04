@@ -1,0 +1,114 @@
+{
+  "session_id": "e648a99a-1d93-45d8-bb00-a09c3c033269",
+  "final_answer": "{\"Alice\":\"knight\",\"Bob\":\"knave\",\"Charlie\":\"knave\"}",
+  "consensus_score": 1.0,
+  "rounds": 1,
+  "snapshot_hash": "fda0d9ea915da3a49d8021b825620a58eab98d44ef4496fc3179159ad0175f82",
+  "snapshot_timestamp": "2026-04-02T18:34:15.567370+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "consensus",
+  "winning_hypothesis": "H_agent2",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H_agent1": {
+      "S_g": 0.6400000000000001,
+      "S_i": 0.0,
+      "S_net": 0.6400000000000001
+    },
+    "H_agent2": {
+      "S_g": 1.0,
+      "S_i": 0.0,
+      "S_net": 1.0
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "e648a99a-1d93-45d8-bb00-a09c3c033269",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "e648a99a-1d93-45d8-bb00-a09c3c033269",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "fda0d9ea915da3a49d8021b825620a58eab98d44ef4496fc3179159ad0175f82",
+          "hypothesis_id": "H_agent1",
+          "answer": "{ \"Alice\": \"knave\", \"Bob\": \"knight\", \"Charlie\": \"knave\" }",
+          "answer_hash": "dce9209586e0ca36",
+          "signal": {
+            "confidence": 0.8,
+            "polarity": 1,
+            "generative_strength": 0.8,
+            "inhibitory_pressure": 0.1
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.8
+          },
+          "explanation": "1. If Alice is telling the truth (is a knight), then Bob must be a knave based on her statement. This means Charlie's claim about Alice being a knave would be false, which contradicts our assumption that Alice is a knight and hence can't both tell the truth and lie at the same time.\n2. So let's assume Alice is lying (is a knave). In this case, Bob must be a knight based on her statement. Since Bob always tells the truth, his claim about Alice and Charlie being of the same type would mean that they are both knaves or both knights. But we know from step 1 that Alice is a knave, so it means Charlie is also a knave.\n3. We have now determined their types based on their statements: Alice is a knave, Bob is a knight, and Charlie is a knave."
+        },
+        {
+          "type": "agent.response",
+          "session_id": "e648a99a-1d93-45d8-bb00-a09c3c033269",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "fda0d9ea915da3a49d8021b825620a58eab98d44ef4496fc3179159ad0175f82",
+          "hypothesis_id": "H_agent2",
+          "answer": "{\"Alice\":\"knight\",\"Bob\":\"knave\",\"Charlie\":\"knave\"}",
+          "answer_hash": "6b58ca48d46a0640",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 1.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "{\"Alice\":\"knight\",\"Bob\":\"knave\",\"Charlie\":\"knave\"}"
+        }
+      ],
+      "accumulators": {
+        "H_agent1": {
+          "S_g": 0.6400000000000001,
+          "S_i": 0.0,
+          "S_net": 0.6400000000000001
+        },
+        "H_agent2": {
+          "S_g": 1.0,
+          "S_i": 0.0,
+          "S_net": 1.0
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 79.88,
+  "_iep_validation": {
+    "envelope_id": "2d1bee8a-98ca-41b4-ac13-893fb9e7f0ae",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=fda0d9ea915d... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-02T18:34:15.569371+00:00"
+  }
+}

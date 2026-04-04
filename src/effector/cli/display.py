@@ -203,9 +203,24 @@ def print_result_json(result: dict[str, Any]) -> None:
 
 def print_result_minimal(result: dict[str, Any]) -> None:
     """One-line summary."""
+    # --- NEW: Handle Reflex results ---
+    if result.get("_path") == "reflex":
+        status = result.get("status", "EXECUTED")
+        rat_id = str(result.get("rat_id", "unknown"))[:8]
+        action = result.get("matched_action", {})
+        verb = action.get("verb", "WRITE")
+        target = action.get("target", "world_state")
+        console.print(f"[REFLEX] {status} | RAT:{rat_id} | {verb} {target}")
+        return
+    # ----------------------------------
+
     score  = result.get("consensus_score", 0.0)
     reason = result.get("terminated_reason", "?")
-    answer = result.get("final_answer", "")[:80]
+    
+    # Strip newlines so the answer actually fits on one line
+    raw_answer = str(result.get("final_answer", ""))
+    answer = raw_answer.replace("\n", " ")[:80]
+    
     console.print(f"[{score:.3f}] {reason} | {answer}")
 
 

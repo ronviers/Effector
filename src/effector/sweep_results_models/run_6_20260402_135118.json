@@ -1,0 +1,114 @@
+{
+  "session_id": "1d64c4f9-93da-413e-ad5b-10f86268bdd6",
+  "final_answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+  "consensus_score": 1.0,
+  "rounds": 1,
+  "snapshot_hash": "7d1ec5fe120965e50f3a96567e8b15f53a4a64442dee51025ce237e6b29a9ad8",
+  "snapshot_timestamp": "2026-04-02T18:58:56.106128+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "consensus",
+  "winning_hypothesis": "H_agent1",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H_agent1": {
+      "S_g": 1.0,
+      "S_i": 0.0,
+      "S_net": 1.0
+    },
+    "H_agent2": {
+      "S_g": 1.0,
+      "S_i": 0.0,
+      "S_net": 1.0
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "1d64c4f9-93da-413e-ad5b-10f86268bdd6",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "1d64c4f9-93da-413e-ad5b-10f86268bdd6",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "7d1ec5fe120965e50f3a96567e8b15f53a4a64442dee51025ce237e6b29a9ad8",
+          "hypothesis_id": "H_agent1",
+          "answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+          "answer_hash": "d794390ab92e91fd",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 1.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "To solve this logic puzzle, we need to analyze each statement made by Alice, Bob, and Charlie in relation to their types (knight or knave).\n\n1. **Alice's Statement**: \"Bob is a knave.\"\n   - If Alice is a knight, then her statement must be true; hence, Bob would indeed be a knave.\n   - If Alice is a knave, then her statement must be false; hence, Bob would be a knight.\n\n2. **Bob's Statement**: \"Alice and Charlie are of the same type.\"\n   - If Bob is a knight, his statement must be true; therefore, both Alice and Charlie must either both be knights or both be knaves.\n   - If Bob is a knave, then his statement must be false; hence, Alice and Charlie would have to be of different types.\n\n3. **Charlie's Statement**: \"Alice is a knave.\"\n   - If Charlie is a knight, his statement must be true; hence, Alice would indeed be a knave.\n   - If Charlie is a knave, then his statement must be false; hence, Alice would be a knight.\n\nLet\u2019s analyze these possibilities:\n\n- **Assume Alice is a Knight**:\n  - Her statement that \"Bob is a knave\" should be true. So, Bob is a knave.\n  - Since Bob (a knave) says \u201cAlice and Charlie are of the same type,\u201d this statement must be false; hence, Alice and Charlie cannot both be knights or both be knaves. This means Charlie would have to be a knave.\n  - If Charlie is a knave, his statement that \"Alice is a knave\" must be false, which aligns with Alice being a knight.\n\n- **Assume Alice is a Knave**:\n  - Her statement that \"Bob is a knave\" should be false. So, Bob would have to be a knight.\n  - Since Bob (a knight) says \u201cAlice and Charlie are of the same type,\u201d this statement must be true; hence, both Alice and Charlie would need to be knights or both be knaves. But since we assumed Alice is a knave, Charlie would also have to be a knave.\n  - If Charlie is a knave, his statement that \"Alice is a knave\" must be false, which contradicts the assumption that Alice is a knave.\n\nGiven this analysis, only the scenario where Alice is a knight and Bob and Charlie are both knaves holds without contradiction."
+        },
+        {
+          "type": "agent.response",
+          "session_id": "1d64c4f9-93da-413e-ad5b-10f86268bdd6",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "7d1ec5fe120965e50f3a96567e8b15f53a4a64442dee51025ce237e6b29a9ad8",
+          "hypothesis_id": "H_agent2",
+          "answer": "{\n  \"Alice\": \"knight\",\n  \"Bob\": \"knave\",\n  \"Charlie\": \"knave\"\n}",
+          "answer_hash": "b017b826e3235572",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 1.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "{\n  \"Alice\": \"knight\",\n  \"Bob\": \"knave\",\n  \"Charlie\": \"knave\"\n}"
+        }
+      ],
+      "accumulators": {
+        "H_agent1": {
+          "S_g": 1.0,
+          "S_i": 0.0,
+          "S_net": 1.0
+        },
+        "H_agent2": {
+          "S_g": 1.0,
+          "S_i": 0.0,
+          "S_net": 1.0
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 455.98,
+  "_iep_validation": {
+    "envelope_id": "fccf1524-6463-420e-9757-534de01e2038",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=7d1ec5fe1209... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-02T18:58:56.109645+00:00"
+  }
+}

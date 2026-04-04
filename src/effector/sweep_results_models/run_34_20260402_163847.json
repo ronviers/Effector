@@ -1,0 +1,114 @@
+{
+  "session_id": "07008cac-8945-49b0-a5c6-9febe2e8ea77",
+  "final_answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+  "consensus_score": 1.0,
+  "rounds": 1,
+  "snapshot_hash": "1457e5940fc439de92b7fb5989c8348ae6d70d13286df49589154a17b917e1ba",
+  "snapshot_timestamp": "2026-04-02T21:45:51.965728+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "consensus",
+  "winning_hypothesis": "H_agent1",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H_agent1": {
+      "S_g": 1.0,
+      "S_i": 0.0,
+      "S_net": 1.0
+    },
+    "H_agent2": {
+      "S_g": 0.855,
+      "S_i": 0.0,
+      "S_net": 0.855
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "07008cac-8945-49b0-a5c6-9febe2e8ea77",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "07008cac-8945-49b0-a5c6-9febe2e8ea77",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "1457e5940fc439de92b7fb5989c8348ae6d70d13286df49589154a17b917e1ba",
+          "hypothesis_id": "H_agent1",
+          "answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+          "answer_hash": "d794390ab92e91fd",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 1.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}"
+        },
+        {
+          "type": "agent.response",
+          "session_id": "07008cac-8945-49b0-a5c6-9febe2e8ea77",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "1457e5940fc439de92b7fb5989c8348ae6d70d13286df49589154a17b917e1ba",
+          "hypothesis_id": "H_agent2",
+          "answer": "{\"Alice\":\"knight\",\"Bob\":\"knave\",\"Charlie\":\"knave\"}",
+          "answer_hash": "6b58ca48d46a0640",
+          "signal": {
+            "confidence": 0.95,
+            "polarity": 1,
+            "generative_strength": 0.9,
+            "inhibitory_pressure": 0.1
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.95
+          },
+          "explanation": "We denote each inhabitant as either Knight (truth\u2011teller) or Knave (liar).  \n- Alice\u2019s statement \u201cBob is a knave\u201d must be true if Alice is a Knight, false if Alice is a Knave.  \n- Bob\u2019s statement \u201cAlice and Charlie are of the same type\u201d must be true if Bob is a Knight, false if Bob is a Knave.  \n- Charlie\u2019s statement \u201cAlice is a knave\u201d must be true if Charlie is a Knight, false if Charlie is a Knave.  \n\nTesting the eight possible assignments:\n\n1. (A=K, B=K, C=K) \u2013 Alice would require Bob to be a knave \u2192 contradiction.  \n2. (A=K, B=K, C=N) \u2013 same contradiction as 1.  \n3. (A=K, B=N, C=K) \u2013 Bob\u2019s false statement would require Alice and Charlie to differ, but they are both knights \u2192 contradiction.  \n4. (A=K, B=N, C=N) \u2013  \n   * Alice (K) says Bob is a knave \u2192 true (Bob is N).  \n   * Bob (N) says \u201cAlice and Charlie are the same\u201d \u2192 false, and indeed Alice (K) and Charlie (N) differ.  \n   * Charlie (N) says \u201cAlice is a knave\u201d \u2192 false, and Alice is a knight.  \n   All statements match the speakers\u2019 types, so this assignment is consistent.  \n5\u20118. All remaining assignments lead to at least one mismatch between a statement\u2019s truth value and the speaker\u2019s type.\n\nThus the only viable configuration is: Alice\u202f=\u202fknight, Bob\u202f=\u202fknave, Charlie\u202f=\u202fknave."
+        }
+      ],
+      "accumulators": {
+        "H_agent1": {
+          "S_g": 1.0,
+          "S_i": 0.0,
+          "S_net": 1.0
+        },
+        "H_agent2": {
+          "S_g": 0.855,
+          "S_i": 0.0,
+          "S_net": 0.855
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 422.67,
+  "_iep_validation": {
+    "envelope_id": "9b163bf9-a748-4e84-8120-9eb44c3f77c0",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=1457e5940fc4... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-02T21:45:51.968253+00:00"
+  }
+}

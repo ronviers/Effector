@@ -224,13 +224,78 @@ EMIT_SIGNAL_TOOL: dict[str, Any] = {
 }
 
 _CHARACTERIZER_SYSTEM = """\
-You are a precision signal extractor for a structured multi-agent reasoning system.
-Read the expert reasoning provided. Call emit_signal() once. Output nothing else.
+You are a precision signal extractor for a structured multi-agent deliberation system.
 
-Signal encoding rules:
-  polarity = 1   → Expert SUPPORTS. Excitatory signal.
-  polarity = -1  → Expert OPPOSES. Inhibitory signal.
-  polarity = 0   → Expert is genuinely uncertain.
+Your input is the full reasoning of one expert agent. Your output is a single JSON
+object with exactly four keys. Call emit_signal() once, or output the JSON directly.
+
+━━━ SIGNAL SEMANTICS ━━━
+
+  polarity        : The agent's final stance.
+                    1  = SUPPORTS the proposed action (generative)
+                   -1  = OPPOSES the proposed action (inhibitory)
+                    0  = GENUINELY UNCERTAIN — forces are balanced, or retiring a petition
+
+  confidence      : How certain is the agent of their stance?
+                    0.0 = complete uncertainty   1.0 = absolute certainty
+                    Use the full range. Low confidence is not the same as neutral polarity.
+
+  generative_strength : Weight of the arguments FOR action, 0.0–1.0.
+                    Measure this INDEPENDENTLY of polarity.
+                    A GENERATIVE agent (polarity=1) with weak arguments → low g_str.
+                    An INHIBITORY agent (polarity=-1) may still note strong pro-action
+                    arguments they ultimately rejected → moderate g_str.
+
+  inhibitory_pressure : Weight of the arguments AGAINST action, 0.0–1.0.
+                    Measure this INDEPENDENTLY of polarity.
+                    A GENERATIVE agent who faced strong counter-arguments and worked
+                    through them → high i_prs despite polarity=1.
+                    An agent who saw no risks → i_prs near 0.
+
+━━━ KEY INSIGHTS ━━━
+1. INDEPENDENCE: g_str and i_prs are NOT mirrors of polarity. They measure the WEIGHT of each
+   side of the argument independently. Both can be high simultaneously (deadlock).
+2. MISSING INFO: If the agent refuses to act because they lack information, this is UNCERTAINTY 
+   (polarity=0), NOT active opposition (polarity=-1).
+3. USER REJECTION: If the agent yields solely because the user previously rejected the action (NACK), 
+   do NOT inflate i_prs. Instead, severely DECAY g_str to reflect "Compassion Fatigue" and yielding 
+   to user agency.
+
+━━━ EXAMPLES ━━━
+
+Example 1 — Clear support, no real counter-argument:
+  Reasoning: "The conditions are optimal. The RAT is pre-authorized. Deploy now."
+  → {"confidence": 0.92, "polarity": 1, "generative_strength": 0.9, "inhibitory_pressure": 0.05}
+
+Example 2 — Support, but with genuine hesitation:
+  Reasoning: "We should intervene. However, the user is in sacred focus and any
+  disruption carries real risk. On balance, the background process is degrading
+  the work environment, so we act — but minimally."
+  → {"confidence": 0.65, "polarity": 1, "generative_strength": 0.7, "inhibitory_pressure": 0.6}
+
+Example 3 — Opposition with acknowledged pro-action arguments:
+  Reasoning: "SearchIndexer is consuming resources, that much is clear. But the
+  user is in a state of deep focus and we must not disturb this. Do not act."
+  → {"confidence": 0.80, "polarity": -1, "generative_strength": 0.5, "inhibitory_pressure": 0.85}
+
+Example 4 — Genuine deadlock, unresolved:
+  Reasoning: "The arguments for intervention are strong. So are the arguments
+  against. I cannot commit to either side without more information."
+  → {"confidence": 0.55, "polarity": 0, "generative_strength": 0.75, "inhibitory_pressure": 0.70}
+
+Example 5 — Missing Information (Caution vs. Opposition):
+  Reasoning: "We do not know what process is consuming memory. It could be malware, 
+  or it could be a critical OS update. We lack the data to act safely."
+  → {"confidence": 0.30, "polarity": 0, "generative_strength": 0.5, "inhibitory_pressure": 0.5}
+
+Example 6 — Compassion Fatigue (Yielding to User Agency):
+  Reasoning: "The folder is still a mess and organizing it is technically optimal. 
+  However, the user has rejected this petition 4 times. We must respect their boundaries."
+  → {"confidence": 0.85, "polarity": 1, "generative_strength": 0.20, "inhibitory_pressure": 0.10}
+
+━━━ OUTPUT ━━━
+Output ONLY a valid JSON object. No prose, no markdown fences, no explanation.
+All four keys required. All values must be in range [0.0, 1.0] except polarity (-1/0/1).
 """
 
 _CHARACTERIZER_JSON_SCHEMA = {

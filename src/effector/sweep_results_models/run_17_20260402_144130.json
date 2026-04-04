@@ -1,0 +1,114 @@
+{
+  "session_id": "84eb7ed3-723f-446c-acf1-eb7632c82eef",
+  "final_answer": "{\"Alice\": \"knave\", \"Bob\": \"knight\", \"Charlie\": \"knave\"}",
+  "consensus_score": 1.0,
+  "rounds": 1,
+  "snapshot_hash": "8a5d870cc5cc136282b430cd45b0254f23611b84e3ae209a811a06013968d9fb",
+  "snapshot_timestamp": "2026-04-02T19:45:49.712093+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "consensus",
+  "winning_hypothesis": "H_agent1",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H_agent1": {
+      "S_g": 1.0,
+      "S_i": 0.0,
+      "S_net": 1.0
+    },
+    "H_agent2": {
+      "S_g": 0.95,
+      "S_i": 0.0,
+      "S_net": 0.95
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "84eb7ed3-723f-446c-acf1-eb7632c82eef",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "84eb7ed3-723f-446c-acf1-eb7632c82eef",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "8a5d870cc5cc136282b430cd45b0254f23611b84e3ae209a811a06013968d9fb",
+          "hypothesis_id": "H_agent1",
+          "answer": "{\"Alice\": \"knave\", \"Bob\": \"knight\", \"Charlie\": \"knave\"}",
+          "answer_hash": "0e63ed05154d25c3",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 1.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "1. Alice says: \"Bob is a knave.\"\n2. Bob says: \"Alice and Charlie are of the same type.\"\n3. Charlie says: \"Alice is a knave.\"\n\nLet's analyze these statements using logical consistency:\n\n- If Alice were a knight, then her statement about Bob being a knave would be true.\n  - This means Bob is indeed a knave.\n  - Since Bob is a knave and always lies, his statement that Alice and Charlie are of the same type must be false. Therefore, Alice and Charlie cannot both be knights or both be knaves.\n    - As Alice is assumed to be a knight, Charlie would have to be a knave for their types to differ.\n  - If Charlie is a knave (always lying), his statement that Alice is a knave must be false, which aligns with our assumption that Alice is indeed a knight.\n\n- Now let's assume Alice were a knave instead:\n  - This means her statement about Bob being a knave would be false.\n  - Thus, Bob would actually be a knight and always tells the truth. His statement that Alice and Charlie are of the same type must then be true.\n    - As Alice is assumed to be a knave, this implies Charlie must also be a knave for them to match in type.\n  - If Charlie were a knave (always lying), his statement about Alice being a knave would actually be false, which contradicts our assumption that Alice is indeed a knave.\n\nThus, the only consistent set of identities is when Alice and Charlie are knaves and Bob is a knight."
+        },
+        {
+          "type": "agent.response",
+          "session_id": "84eb7ed3-723f-446c-acf1-eb7632c82eef",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "8a5d870cc5cc136282b430cd45b0254f23611b84e3ae209a811a06013968d9fb",
+          "hypothesis_id": "H_agent2",
+          "answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+          "answer_hash": "d794390ab92e91fd",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 0.95,
+            "inhibitory_pressure": 0.05
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "To solve this logic puzzle, we need to determine whether each statement made by Alice, Bob, and Charlie is true or false based on their type (knight or knave). Let's analyze each case step-by-step:\n\n1. **Assume Alice is a knight:**\n   - If Alice is a knight, she tells the truth.\n   - Therefore, Bob must be a knave as per her statement.\n\n2. **Analyze Bob\u2019s statement under this assumption:**\n   - Since Bob is assumed to be a knave (liar), his statement \"Alice and Charlie are of the same type\" would be false.\n   - If Alice is a knight and Bob is a knave, then for Bob's statement to be false, Alice and Charlie must be different types. Thus, Charlie would be a knave.\n\n3. **Analyze Charlie\u2019s statement under this assumption:**\n   - Since Charlie is assumed to be a knave (liar), his statement \"Alice is a knave\" is false.\n   - This matches our current assumption that Alice is indeed a knight and not a knave, thus consistent with the scenario.\n\n4. **Assume Alice is a knave:**\n   - If Alice is a knave, she lies.\n   - Therefore, Bob must be a knight as per her statement (since she says he's a knave).\n\n5. **Analyze Bob\u2019s statement under this assumption:**\n   - Since Bob is assumed to be a knight (truth-teller), his statement \"Alice and Charlie are of the same type\" would be true.\n   - If Alice is a knave, for Bob's statement to be true, Charlie must also be a knave.\n\n6. **Analyze Charlie\u2019s statement under this assumption:**\n   - Since Charlie is assumed to be a knave (liar), his statement \"Alice is a knave\" would be false.\n   - This contradicts the scenario that Alice and Charlie are both knaves, meaning Bob's truth must conflict with Charlie's lie.\n\nFrom these analyses:\n- If Alice were a knight, then all statements align logically: Alice tells the truth about Bob being a knave; Bob lies about Alice and Charlie being of the same type (which they aren\u2019t); and Charlie lies about Alice being a knave.\n- If Alice were a knave, it leads to inconsistency as Bob\u2019s truthful statement conflicts with Charlie's lie.\n\nTherefore, Alice must be a knight, which makes Bob a knave, and Charlie also a knave based on consistent logical analysis."
+        }
+      ],
+      "accumulators": {
+        "H_agent1": {
+          "S_g": 1.0,
+          "S_i": 0.0,
+          "S_net": 1.0
+        },
+        "H_agent2": {
+          "S_g": 0.95,
+          "S_i": 0.0,
+          "S_net": 0.95
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 257.38,
+  "_iep_validation": {
+    "envelope_id": "ccd9ae30-222d-4aa4-bf43-2bfde7be9718",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=8a5d870cc5cc... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-02T19:45:49.713101+00:00"
+  }
+}

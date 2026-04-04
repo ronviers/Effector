@@ -1,0 +1,362 @@
+{
+  "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+  "final_answer": "(abstention)",
+  "consensus_score": 0.0,
+  "rounds": 5,
+  "snapshot_hash": "cde40ec071128c5db641f218f740a020522f77de7404f6ebfd5863130a8ab036",
+  "snapshot_timestamp": "2026-04-02T18:08:18.711819+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "max_rounds",
+  "winning_hypothesis": "H_agent1_abstain",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H_agent1_abstain": {
+      "S_g": 0.0,
+      "S_i": 0.0,
+      "S_net": 0.0
+    },
+    "H_agent2_abstain": {
+      "S_g": 0.0,
+      "S_i": 0.0,
+      "S_net": 0.0
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "cde40ec071128c5db641f218f740a020522f77de7404f6ebfd5863130a8ab036",
+          "hypothesis_id": "H_agent1_abstain",
+          "answer": "(abstention)",
+          "answer_hash": "f45d6797c6e658ea",
+          "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0
+          },
+          "explanation": "Abstention \u2014 two-phase pipeline failed"
+        },
+        {
+          "type": "agent.response",
+          "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "cde40ec071128c5db641f218f740a020522f77de7404f6ebfd5863130a8ab036",
+          "hypothesis_id": "H_agent2_abstain",
+          "answer": "(abstention)",
+          "answer_hash": "f45d6797c6e658ea",
+          "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0
+          },
+          "explanation": "Abstention \u2014 two-phase pipeline failed"
+        }
+      ],
+      "accumulators": {
+        "H_agent1_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        },
+        "H_agent2_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        }
+      }
+    },
+    {
+      "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+      "round": 2,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+          "agent_id": "agent1",
+          "round": 2,
+          "snapshot_hash": "cde40ec071128c5db641f218f740a020522f77de7404f6ebfd5863130a8ab036",
+          "hypothesis_id": "H_agent1_abstain",
+          "answer": "(abstention)",
+          "answer_hash": "f45d6797c6e658ea",
+          "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0
+          },
+          "explanation": "Abstention \u2014 two-phase pipeline failed"
+        },
+        {
+          "type": "agent.response",
+          "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+          "agent_id": "agent2",
+          "round": 2,
+          "snapshot_hash": "cde40ec071128c5db641f218f740a020522f77de7404f6ebfd5863130a8ab036",
+          "hypothesis_id": "H_agent2_abstain",
+          "answer": "(abstention)",
+          "answer_hash": "f45d6797c6e658ea",
+          "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0
+          },
+          "explanation": "Abstention \u2014 two-phase pipeline failed"
+        }
+      ],
+      "accumulators": {
+        "H_agent1_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        },
+        "H_agent2_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        }
+      }
+    },
+    {
+      "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+      "round": 3,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+          "agent_id": "agent1",
+          "round": 3,
+          "snapshot_hash": "cde40ec071128c5db641f218f740a020522f77de7404f6ebfd5863130a8ab036",
+          "hypothesis_id": "H_agent1_abstain",
+          "answer": "(abstention)",
+          "answer_hash": "f45d6797c6e658ea",
+          "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0
+          },
+          "explanation": "Abstention \u2014 two-phase pipeline failed"
+        },
+        {
+          "type": "agent.response",
+          "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+          "agent_id": "agent2",
+          "round": 3,
+          "snapshot_hash": "cde40ec071128c5db641f218f740a020522f77de7404f6ebfd5863130a8ab036",
+          "hypothesis_id": "H_agent2_abstain",
+          "answer": "(abstention)",
+          "answer_hash": "f45d6797c6e658ea",
+          "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0
+          },
+          "explanation": "Abstention \u2014 two-phase pipeline failed"
+        }
+      ],
+      "accumulators": {
+        "H_agent1_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        },
+        "H_agent2_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        }
+      }
+    },
+    {
+      "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+      "round": 4,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+          "agent_id": "agent1",
+          "round": 4,
+          "snapshot_hash": "cde40ec071128c5db641f218f740a020522f77de7404f6ebfd5863130a8ab036",
+          "hypothesis_id": "H_agent1_abstain",
+          "answer": "(abstention)",
+          "answer_hash": "f45d6797c6e658ea",
+          "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0
+          },
+          "explanation": "Abstention \u2014 two-phase pipeline failed"
+        },
+        {
+          "type": "agent.response",
+          "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+          "agent_id": "agent2",
+          "round": 4,
+          "snapshot_hash": "cde40ec071128c5db641f218f740a020522f77de7404f6ebfd5863130a8ab036",
+          "hypothesis_id": "H_agent2_abstain",
+          "answer": "(abstention)",
+          "answer_hash": "f45d6797c6e658ea",
+          "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0
+          },
+          "explanation": "Abstention \u2014 two-phase pipeline failed"
+        }
+      ],
+      "accumulators": {
+        "H_agent1_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        },
+        "H_agent2_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        }
+      }
+    },
+    {
+      "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+      "round": 5,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+          "agent_id": "agent1",
+          "round": 5,
+          "snapshot_hash": "cde40ec071128c5db641f218f740a020522f77de7404f6ebfd5863130a8ab036",
+          "hypothesis_id": "H_agent1_abstain",
+          "answer": "(abstention)",
+          "answer_hash": "f45d6797c6e658ea",
+          "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0
+          },
+          "explanation": "Abstention \u2014 two-phase pipeline failed"
+        },
+        {
+          "type": "agent.response",
+          "session_id": "875cc2d0-9878-45c3-b38c-cb5ea4b1a4ab",
+          "agent_id": "agent2",
+          "round": 5,
+          "snapshot_hash": "cde40ec071128c5db641f218f740a020522f77de7404f6ebfd5863130a8ab036",
+          "hypothesis_id": "H_agent2_abstain",
+          "answer": "(abstention)",
+          "answer_hash": "f45d6797c6e658ea",
+          "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0
+          },
+          "explanation": "Abstention \u2014 two-phase pipeline failed"
+        }
+      ],
+      "accumulators": {
+        "H_agent1_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        },
+        "H_agent2_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 20.47,
+  "_iep_validation": {
+    "envelope_id": "07614c6b-9af3-4408-8cbb-d06c9b133f08",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=cde40ec07112... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-02T18:08:18.712820+00:00"
+  }
+}

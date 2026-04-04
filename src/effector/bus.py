@@ -164,7 +164,27 @@ class StateBus:
         with self._lock:
             record = self._reputation_store.get(agent_id)
             if record is None:
+                # --- NEW: Load persistent reputation from SQLite ---
+                import sqlite3
+                from effector.rat_store import _default_db_path
+                try:
+                    with sqlite3.connect(str(_default_db_path()), timeout=2.0) as conn:
+                        row = conn.execute(
+                            "SELECT score, samples FROM agent_reputation WHERE agent_id = ?", 
+                            (agent_id,)
+                        ).fetchone()
+                        if row:
+                            # Hydrate the in-memory cache
+                            self._reputation_store[agent_id] = {
+                                "agent_id": agent_id, "R": row[0], "sample_count": row[1],
+                                "last_updated": None, "history": []
+                            }
+                            return max(row[0], self.R_FLOOR)
+                except Exception:
+                    pass  # Table might not exist yet, fall through to default
+                # -------------------------------------------------
                 return max(self.R_INITIAL, self.R_FLOOR)
+            
             return max(record["R"], self.R_FLOOR)
 
     def update_reputation(
@@ -194,13 +214,29 @@ class StateBus:
             record["R_eff"] = max(record["R"], self.R_FLOOR)
             record["sample_count"] += 1
             record["last_updated"] = datetime.now(timezone.utc).isoformat()
-            record["history"].append({
-                "envelope_id": envelope_id,
-                "session_id": session_id,
-                "accuracy": accuracy,
-                "divergence": divergence,
-                "timestamp": record["last_updated"],
-            })
+            
+            # --- NEW: Persist updated reputation to SQLite ---
+            import sqlite3
+            from effector.rat_store import _default_db_path
+            try:
+                with sqlite3.connect(str(_default_db_path()), timeout=5.0) as conn:
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS agent_reputation (
+                            agent_id TEXT PRIMARY KEY,
+                            score REAL,
+                            samples INTEGER,
+                            last_updated TEXT
+                        )
+                    """)
+                    conn.execute("""
+                        INSERT OR REPLACE INTO agent_reputation (agent_id, score, samples, last_updated)
+                        VALUES (?, ?, ?, ?)
+                    """, (agent_id, record["R"], record["sample_count"], record["last_updated"]))
+                    conn.commit()
+            except Exception as e:
+                print(f"[StateBus] Failed to persist reputation for {agent_id}: {e}")
+            # -------------------------------------------------
+
             return record["R_eff"]
 
     # ─── Listeners / event bus ──────────────────────────────────────────────

@@ -1,0 +1,114 @@
+{
+  "session_id": "6a817b25-84bc-4c73-85e2-95c4c2fe8947",
+  "final_answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+  "consensus_score": 0.95,
+  "rounds": 1,
+  "snapshot_hash": "d4980722ef42a85cf97668c61ef8eefbef20c97d5d59fa4f338c4b67910ee4ad",
+  "snapshot_timestamp": "2026-04-02T21:15:17.954577+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "consensus",
+  "winning_hypothesis": "H_agent1",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H_agent1": {
+      "S_g": 0.95,
+      "S_i": 0.0,
+      "S_net": 0.95
+    },
+    "H_agent2": {
+      "S_g": 0.6400000000000001,
+      "S_i": 0.0,
+      "S_net": 0.6400000000000001
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "6a817b25-84bc-4c73-85e2-95c4c2fe8947",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "6a817b25-84bc-4c73-85e2-95c4c2fe8947",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "d4980722ef42a85cf97668c61ef8eefbef20c97d5d59fa4f338c4b67910ee4ad",
+          "hypothesis_id": "H_agent1",
+          "answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+          "answer_hash": "d794390ab92e91fd",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 0.95,
+            "inhibitory_pressure": 0.05
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "To solve this puzzle, we will analyze each statement to determine consistency based on whether an inhabitant is a knight (truth-teller) or a knave (liar). We'll evaluate all possible scenarios for Alice, Bob, and Charlie being knights or knaves.\n\n1. **Assume Alice is a Knight:**\n   - If Alice is a Knight, her statement \"Bob is a knave\" must be true.\n     - This makes Bob a Knave.\n   - Since Bob is a Knave, his statement \"Alice and Charlie are of the same type\" must be false.\n     - Therefore, Alice and Charlie cannot both be Knights or both be Knaves.\n       - As Alice is already assumed to be a Knight, Charlie must be a Knave.\n   - Now consider Charlie's statement: \"Alice is a knave.\"\n     - Since Charlie is indeed a Knave, his statement being false is consistent with Alice being a Knight.\n\n2. **Assume Alice is a Knave:**\n   - If Alice is a Knave, her statement \"Bob is a knave\" must be false.\n     - This makes Bob a Knight.\n   - Since Bob is a Knight, his statement \"Alice and Charlie are of the same type\" must be true.\n     - Therefore, both Alice and Charlie should be either Knights or Knaves.\n       - But since we've already assumed Alice is a Knave, this makes Charlie a Knave as well.\n   - Now consider Charlie's statement: \"Alice is a knave.\"\n     - Since Charlie is also a Knave, his statement being false aligns with our assumption that Alice is a Knave.\n\nBoth assumptions (Alice being a Knight or Alice being a Knave) lead to consistent scenarios. However, we need to identify the one scenario where all statements are internally coherent:\n\n- **Scenario 1:** Alice is a Knight, Bob is a Knave, Charlie is a Knave.\n- **Scenario 2:** Alice is a Knave, Bob is a Knight, Charlie is a Knave.\n\nLet's verify both scenarios for internal consistency:\n- In Scenario 1: All statements are correct as per the roles assumed (truth-teller and liar roles).\n- In Scenario 2: All statements also hold true given their respective roles.\n\nSince both logically fit, we must choose one coherent scenario. Conventionally in such puzzles, there is usually a unique solution unless stated otherwise. Here, we'll select the first valid scenario since it maintains consistency with Alice's statement being straightforwardly verifiable:"
+        },
+        {
+          "type": "agent.response",
+          "session_id": "6a817b25-84bc-4c73-85e2-95c4c2fe8947",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "d4980722ef42a85cf97668c61ef8eefbef20c97d5d59fa4f338c4b67910ee4ad",
+          "hypothesis_id": "H_agent2",
+          "answer": "{\"Alice\":\"knave\",\"Bob\":\"knight\",\"Charlie\":\"knave\"}",
+          "answer_hash": "ccf5a6a77e227c1d",
+          "signal": {
+            "confidence": 0.8,
+            "polarity": 1,
+            "generative_strength": 0.8,
+            "inhibitory_pressure": 0.1
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.8
+          },
+          "explanation": "We model the statements as logical constraints. Let A, B, C be Boolean flags (true = knight, false = knave). Alice says \u00acB; if A is knight then \u00acB must be true; if knave then \u00acB must be false. Bob says A \u2194 C; if knight then A=C; if knave then A\u2260C. Charlie says \u00acA; if knight then A=false; if knave then A=true. Testing cases shows only one consistent assignment: A=knave (false), B=knight (true), C=knave (false). All statements align with their truthfulness."
+        }
+      ],
+      "accumulators": {
+        "H_agent1": {
+          "S_g": 0.95,
+          "S_i": 0.0,
+          "S_net": 0.95
+        },
+        "H_agent2": {
+          "S_g": 0.6400000000000001,
+          "S_i": 0.0,
+          "S_net": 0.6400000000000001
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 272.36,
+  "_iep_validation": {
+    "envelope_id": "dd461459-568d-44d3-b14d-45aef023ab14",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=d4980722ef42... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-02T21:15:17.955081+00:00"
+  }
+}

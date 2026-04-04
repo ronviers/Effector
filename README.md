@@ -1,433 +1,630 @@
-# Effector Engine
-
-A headless multi-agent reasoning loop over live OS telemetry, implementing the complete **DASP-1.0 + IEP-1.0** protocol stack against real system state — CPU load, memory pressure, active windows, network throughput — using local LLMs as the reasoning layer, with automatic cloud escalation on deadlock.
-
-```
-  OS STATE (psutil)
-       │
-  ─────▼──────────────────────────────────────────────────
-  A1 · TELEMETRY POLLER        TelemetryPoller → StateBus
-  ─────┬──────────────────────────────────────────────────
-       │ snapshot_hash  [+ snapshot_vector when A3 active]
-  ─────▼──────────────────────────────────────────────────
-  A2 · ASYMMETRIC DASP         mistral + qwen  (local)
-       │                       ↓ on stall / inhibition gate
-       │                       nemotron        (cloud arbiter)
-  ─────┬──────────────────────────────────────────────────
-       │ debate_result + consensus_score
-  ─────▼──────────────────────────────────────────────────
-  A3 · IEP VALIDATION          IEPBuilder → IEPValidator
-       │                       → EnvelopeQueue  (JSONL log)
-  ─────────────────────────────────────────────────────────
-```
-
----
-
-## Background
-
-Effector is built on two formal protocols described in *Cognitive Agent Architecture: Protocol Suite v1.0*:
-
-**DASP-1.0 — Debate-as-a-Service Protocol** governs deliberation. A group of agents debate a hypothesis through structured rounds, emitting numerical signals — generative strength, inhibitory pressure, polarity — that are composed mathematically rather than resolved by majority vote. Three gates evaluate termination in strict priority order:
-
-| Gate | Condition | Action |
-|------|-----------|--------|
-| Inhibition (P1) | `S_i(H) ≥ τ · S_g(H)` | Abort / escalate |
-| Stall (P2) | `\|ΔS_net\| < ε_stall` | Optimize phase |
-| Consensus (P3) | `S_net(H) ≥ θ` | Terminate |
-
-P1 always preempts P3. A strong inhibitory signal cannot be overridden by the size of the generative coalition — mirroring the role of striatal inhibitory interneurons in biological motor control.
-
-**IEP-1.0 — Intention Envelope Protocol** governs execution. Any agent that wants to write to shared state must first emit a typed envelope declaring its intent, a snapshot hash binding it to a specific world state, and a falsifiable forward model (`expected_state_change`). A verifier runs five pre-flight checks before the write is permitted. Divergence between predicted and actual delta drives replanning.
-
-The two protocols connect through the `snapshot_hash` field. Every envelope is cryptographically bound to the exact world state the deliberating agents reasoned from — creating an unbroken, auditable chain from observation to decision to action.
-
----
-
-## Architecture
-
-### A1 · Substrate Telemetry — `src/effector/telemetry/`
-
-A daemon thread polls OS state via `psutil` every N seconds and writes structured key-value deltas to a `StateBus` dictionary. All canonical key names live in `state_keys.py` as a frozen `KEYS` singleton — agents reference these names in their `expected_state_change` declarations to keep the state ontology stable across sessions.
-
-| Group | Keys |
-|-------|------|
-| CPU | `cpu.percent.total`, `cpu.percent.per_core`, `cpu.freq.mhz`, `cpu.ctx_switches_sec` |
-| Memory | `ram.used_mb`, `ram.percent`, `swap.used_mb`, `swap.percent` |
-| Disk I/O | `disk.read_mb_s`, `disk.write_mb_s`, `disk.iops_read`, `disk.iops_write` |
-| Network | `net.sent_kb_s`, `net.recv_kb_s`, `net.connections_count` |
-| Process | `process.count`, `process.top_cpu.name`, `process.top_mem.mb` |
-| Desktop | `desktop.active_window`, `desktop.active_process` |
-| Health | `system.pressure`, `system.thermal_alert` |
-
-The composite system pressure score is nonlinear:
-
-```
-P = 0.50 · f(cpu) + 0.35 · f(ram) + 0.15 · f(swap)
-f(x) = (x / 100)^1.5          # emphasises > 80% utilisation
-```
-
-`thermal_alert` fires when `P > 0.85`.
-
-```python
-from effector.telemetry.poller import TelemetryPoller
-from effector.state_bus.bus import StateBus
-
-bus = StateBus()
-poller = TelemetryPoller(bus, interval_s=2.0, on_poll=lambda d: print(d))
-poller.start()
-# ...
-poller.stop()
-
-# or single-shot:
-delta = TelemetryPoller(bus).poll_once()
-```
-
-### A2 · Asymmetric DASP — `src/effector/adapters/asymmetric_dasp.py`
-
-A two-tier debate coordinator. Tier-1 agents (mistral + qwen, running locally via Ollama) debate for up to `max_rounds`. The Tier-2 arbiter (nemotron) is instantiated **only** when local agents deadlock — keeping cloud API costs and latency entirely off the happy path.
-
-When Tier-2 is invoked, the arbiter receives full session context including the deadlock reason, all prior agent positions, and confidence scores. Its response is injected as a single authoritative round, gates are re-evaluated, and the session terminates.
-
-```python
-from effector.adapters.asymmetric_dasp import AsymmetricDASPCoordinator, TierConfig
-
-coord = AsymmetricDASPCoordinator(
-    tier1_agents=[
-        TierConfig(name="mistral", model="mistral", max_rounds=3),
-        TierConfig(name="qwen",    model="qwen2.5-coder:32b", max_rounds=3),
-    ],
-    tier2_agent=TierConfig(name="nemotron", model="nemotron", timeout_s=120.0),
-    tau_suppression=0.5,
-    theta_consensus=0.65,
-    epsilon_stall=0.04,
-    on_event=lambda event, data: print(event, data),
-)
-
-result = coord.run(task="Analyse system health...", snapshot_hash=snap_hash, state_bus=bus)
-print(result["final_answer"])
-print(result["tier2_injected"])   # True if cloud arbiter was invoked
-print(result["escalations"])      # list of EscalationRecord dicts
-```
-
-**Result contract fields:** `session_id`, `final_answer`, `consensus_score`, `rounds`, `snapshot_hash`, `terminated_reason`, `tier1_agents`, `tier2_agent`, `tier2_injected`, `disagreement_score`, `signal_manifold`, `escalations`, `all_rounds`
-
-### A3 · IEP Validation + Envelope Queue — `src/effector/queue/iep_queue.py`
-
-Three cooperating classes that route the DASP result into a verified, auditable action record.
-
-**IEPBuilder** constructs a typed IEP envelope dict from a raw debate result. Walks the round transcript to aggregate `predicted_delta` values — the modal value per affected key across all agent ESC declarations. Falls back to the `final_answer` string if agents emitted no structured predictions.
-
-**IEPValidator** runs the five pre-flight checks from IEP §5 in strict fail-fast priority order:
-
-| # | Check | NACK reason |
-|---|-------|-------------|
-| 1 | Schema completeness | `NACK_SCHEMA_COMPLETENESS` |
-| 2 | TTL freshness | `NACK_TTL_FRESHNESS` |
-| 3 | Snapshot match | `NACK_SNAPSHOT_HASH` |
-| 4 | Abort conditions | `NACK_ABORT_CONDITIONS` |
-| 5 | Role authorization | `NACK_ROLE_AUTHORIZATION` |
-
-Check 3 is the binding joint between DASP and IEP: if the world state changed between the debate snapshot and envelope emission, the validator rejects the envelope. The agent must re-snapshot and re-deliberate.
-
-**EnvelopeQueue** is a thread-safe `queue.Queue` wrapper. Every item — ACK or NACK — is appended as a JSON line to a local file. The complete audit trail is preserved regardless of outcome.
-
-```python
-from effector.queue.iep_queue import IEPBuilder, IEPValidator, EnvelopeQueue
-
-queue = EnvelopeQueue(persist_path="iep_queue.jsonl")
-
-envelope = IEPBuilder.from_debate_result(
-    debate_result=result,
-    state_bus_snapshot_hash=current_hash,
-    keys_affected=["system.pressure", "cpu.percent.total"],
-)
-
-validator = IEPValidator(state_bus=bus, authorized_roles={"WRITE": ["executor"]})
-verdict   = validator.validate(envelope)
-
-queue.put(envelope, verdict)
-# verdict.status         → "ACK" | "NACK_<check>"
-# verdict.checks_passed  → ["schema_completeness", "ttl_freshness", ...]
-# verdict.failure_reason → str | None
-```
-
----
-
-## IEP-A3: Vectorized State Bus
-
-The base protocol uses SHA-256 hashes for snapshot identity: exact-match or fail. IEP-A3 adds cosine similarity verification, allowing execution to proceed when the world is *close enough* to the state the agents reasoned from — without requiring byte-perfect equality.
-
-This is implemented across four files in five milestones:
-
-### M1 — Deterministic Serialization (`bus.py`)
-
-`StateBus.serialize()` produces a sorted, pipe-delimited flat string of the world state suitable for embedding-model input. Volatile keys — `telemetry.timestamp`, `telemetry.interval_s` — are filtered out by default so that per-poll-cycle churn does not shift the embedding unnecessarily.
-
-```python
-bus.serialize()
-# → "cpu.freq.mhz: 3600.0 | cpu.percent.total: 18.3 | desktop.active_window: Code.exe | ..."
-```
-
-The `StateBus` itself makes zero network calls. This preserves the **dumb substrate constraint** from IEP-A3.1: all vector computation happens in the Orchestration Layer.
-
-### M2 — Coordinator-Side Vectorization (`asymmetric_dasp.py`)
-
-When `vectorized_bus=True`, `AsymmetricDASPCoordinator.run()` calls Ollama's `/api/embed` endpoint immediately after capturing the SHA-256 snapshot hash and *before* dispatching any agent requests. The vector and associated metadata are propagated into the debate result.
-
-If the embedding call fails or returns fewer than 256 dimensions (below the minimum recommended by A3.3), the session continues in hash-only mode. Failure is non-fatal and logged.
-
-```python
-coord = AsymmetricDASPCoordinator(
-    ...,
-    vectorized_bus=True,
-    embedding_model="nomic-embed-text",    # any Ollama embed model
-    rat_similarity_threshold=0.97,
-)
-
-result = coord.run(task, snap_hash, bus)
-result["snapshot_vector"]            # list[float] | None
-result["vectorized_bus"]             # True only if vector was successfully captured
-result["rat_similarity_threshold"]   # 0.97
-result["embedding_model"]            # "nomic-embed-text"
-```
-
-### M3 — Envelope Builder Augmentation (`iep_queue.py`)
-
-`IEPBuilder.from_debate_result()` extracts the A3 fields from the debate result and writes them into `world_model_snapshot`. The `iep_version` is set to `"1.0-A3"` when a vector is present. If the debate result carries no vector (hash-only or upstream failure), the envelope is produced as a standard `"1.0"` envelope — no new fields, no behaviour change downstream.
-
-### M4 — Cosine Snapshot Verification (`iep_queue.py`)
-
-`IEPValidator._check_snapshot()` checks `vectorized_bus` and `snapshot_vector` in the envelope. When both are present, the verifier:
-
-1. Reads the current bus state.
-2. Serializes it via `StateBus.serialize()`.
-3. Fetches the current embedding from Ollama `/api/embed`.
-4. Computes cosine similarity against the stored vector.
-5. ACKs if `similarity >= rat_similarity_threshold`.
-
-If the embedding fetch fails for any reason, it falls through to SHA-256 hash comparison. The validator never silently approves an unverifiable state.
-
-```
-similarity(V_current, V_snapshot) = dot(V, Vs) / (‖V‖ · ‖Vs‖)
-```
-
-Recommended thresholds per A3.2:
-
-| Mode | Threshold |
-|------|-----------|
-| High-confidence | 0.97 |
-| Standard | 0.92 |
-| Permissive | 0.85 |
-
-### M5 — Semantic Drift Lock (`iep_queue.py`)
-
-Before any cosine computation, the validator runs an exact-value check on a configurable `critical_keys` tuple (defaulting to `desktop.active_window` and `desktop.active_process`). These keys change discretely — a window switch is semantically significant regardless of how small a cosine shift it produces.
-
-If any critical key has mutated between the snapshot and validation time, the validator immediately returns `NACK_SNAPSHOT_HASH` without attempting similarity math, forcing a full replan. The lock can be disabled by passing `critical_keys=()` or tuned to any set of keys.
-
-```python
-validator = IEPValidator(
+Effector
+Multi-agent AI orchestration governed by structured deliberation and verified execution.
+Effector is a Python library and CLI that coordinates groups of local LLM agents through two complementary protocols: the Debate-as-a-Service Protocol (DASP) for structured deliberation, and the Intention Envelope Protocol (IEP) for verified, auditable state writes. Agents cannot take naked actions. Every consequential change to shared state is preceded by deliberation, bound to a world-state snapshot, and verified before execution.
+A local Reflex Middleware layer provides a sub-2ms fast path for actions that have already been deliberated and pre-authorized, bypassing the LLM debate loop entirely while preserving the full safety audit trail.
+
+Table of Contents
+Architecture Overview
+Requirements
+Installation
+Quick Start
+CLI Reference
+Configuration
+Protocols
+DASP — Debate-as-a-Service Protocol
+IEP — Intention Envelope Protocol
+Reflex Middleware
+Telemetry
+Testing
+Project Structure
+Contributing
+
+Architecture Overview
+  ┌─────────────────────────────────────────────────────────────┐
+  │  ORCHESTRATION LAYER                                        │
+  │  Goal decomposition · Agent selection · Task routing        │
+  └──────────────────────────────┬──────────────────────────────┘
+                                 │
+  ┌──────────────────────────────▼──────────────────────────────┐
+  │  REFLEX LAYER  (sub-2ms fast path)                          │
+  │  IntentRouter · LocalRATStore · ReflexEngine                │
+  │  Pre-authorized actions bypass deliberation                 │
+  └──────────┬───────────────────────────────────────┬──────────┘
+       RAT hit│                                  RAT miss│
+             ↓                                          ↓
+  ┌──────────────────────┐         ┌─────────────────────────────┐
+  │  EXECUTION LAYER     │         │  DELIBERATION LAYER         │
+  │  IEP-1.1             │         │  DASP-1.1                   │
+  │  Envelope emission   │◄────────│  Debate rounds              │
+  │  Pre-flight verify   │  emit   │  Signal superposition       │
+  │  State write         │         │  Inhibition / stall gates   │
+  └──────────┬───────────┘         │  Consensus detection        │
+             │                     │  RAT issuance on complete   │
+             ▼                     └─────────────────────────────┘
+  ┌──────────────────────┐
+  │  STATE BUS           │
+  │  Immutable world-    │
+  │  state vector        │
+  │  Append-only delta   │
+  │  log                 │
+  └──────────────────────┘
+The key invariant: no agent ever writes to shared state without a valid, verified Intention Envelope. The snapshot hash binding the envelope to a specific world-state slice makes every action traceable from root goal to leaf execution.
+
+Requirements
+Requirement
+Version
+Python
+3.11+
+Ollama
+Latest
+psutil
+5.9+
+pydantic
+2.0+
+
+Hardware (local inference):
+Model size
+Status
+7B
+No pressure
+14B
+Comfortable
+32B
+Fits; set --timeout 120
+70B
+VRAM overflow; GGUF CPU offload only
+
+Tested on: Windows 11 Pro (build 26200), Python 3.12, RTX 4080 SUPER 16 GB, 128 GB RAM.
+
+Installation
+# Clone the repository
+git clone https://github.com/your-org/effector.git
+cd effector
+
+# Install in editable mode
+pip install -e .
+
+# Install optional config-write support
+pip install -e ".[config-write]"
+
+# Install development dependencies
+pip install -e ".[dev]"
+Pull the models you intend to use:
+effector models pull mistral:7b
+effector models pull qwen2.5:14b
+effector models pull qwen2.5-coder:32b # recommended Characterizer model
+effector models pull nomic-embed-text:latest   # required for vectorized snapshot mode
+Verify your environment:
+effector doctor
+
+Quick Start
+Run a single debate session:
+effector run --task "Is the system under abnormal CPU pressure?"
+Specify models explicitly:
+effector run \
+  --task "What is causing the high memory usage?" \
+  --agent1 qwen2.5:32b \
+  --agent2 deepseek-r1:14b \
+  --arbiter nemotron \
+  --max-rounds 5
+Enable vectorized snapshot mode (cosine similarity instead of exact SHA-256 hash matching):
+effector run \
+  --task "Should we throttle background processes?" \
+  --vectorized-bus \
+  --embedding-model nomic-embed-text \
+  --rat-threshold 0.97
+Save full debate result to disk:
+effector run \
+  --task "Diagnose the disk I/O spike" \
+  --output results/session_001.json \
+  --format json
+
+CLI Reference
+effector run
+Run a DASP multi-agent debate session.
+Flag
+Default
+Description
+--task, -t
+(required)
+The directive sent to all agents
+--agent1
+mistral:7b
+Tier-1 agent 1 model
+--agent2
+qwen2.5:14b
+Tier-1 agent 2 model
+--arbiter
+nemotron
+Tier-2 arbiter; invoked on stall or inhibition
+--tau
+0.5
+Inhibition gate threshold τ ∈ [0, 1]
+--theta
+0.7
+Consensus gate threshold θ ∈ [0, 1]
+--epsilon, -e
+0.05
+Stall gate threshold ε ≥ 0
+--max-rounds, -m
+3
+Maximum debate rounds
+--timeout
+60
+Per-agent network call timeout (seconds)
+--vectorized-bus
+off
+Enable IEP-A3 cosine snapshot mode
+--embedding-model
+nomic-embed-text
+Ollama model for snapshot embeddings
+--rat-threshold
+0.97
+Cosine similarity threshold for RAT validation
+--telemetry/--no-telemetry
+on
+Live OS telemetry as agent context
+--format, -f
+pretty
+Output format: pretty | json | minimal | silent
+--output, -o
+—
+Save full result JSON to this path
+--persist
+—
+Append IEP envelopes to a JSONL audit log
+--dry-run
+off
+Validate config and display parameters; do not invoke agents
+
+Exit codes:
+Code
+Meaning
+0
+Success (consensus reached or max rounds)
+1
+Fatal error (Ollama unreachable, bad arguments)
+2
+Inhibition gate fired — hard veto, no consensus possible
+3
+Low consensus score (< 0.4)
+
+effector config
+effector config show               # Print current config
+effector config show debate        # Print a single section
+effector config set debate.tau 0.4 # Set a value persistently
+effector config diff               # Show deviations from defaults
+effector config reset              # Restore factory defaults
+
+effector config profile save my-profile   # Save current config as a named profile
+effector config profile load my-profile   # Load a saved profile
+effector config profile list              # List saved profiles
+Config is stored at:
+Windows: %LOCALAPPDATA%\effector\config.toml
+macOS: ~/Library/Application Support/effector/config.toml
+Linux: ~/.config/effector/config.toml
+effector models
+effector models list              # List installed Ollama models
+effector models known             # List catalogue of known compatible models
+effector models pull <name>       # Pull a model via Ollama
+effector models remove <name>     # Remove a model
+effector models search <query>    # Search ollama.com
+effector models info <name>       # Show model metadata
+effector session
+effector session replay <path>    # Replay a persisted envelope queue (JSONL)
+effector session inspect <path>   # Inspect a saved debate result (JSON)
+
+Configuration
+All effector run flags can be persisted to avoid repeating them on every invocation. The config file is TOML and is edited via effector config set or directly.
+[debate]
+tau        = 0.5
+theta      = 0.7
+epsilon    = 0.05
+max_rounds = 3
+verbosity  = 200
+
+[agents]
+agent1   = "qwen2.5:32b"
+agent2   = "deepseek-r1:14b"
+arbiter  = "nemotron"
+timeout_s = 90.0
+
+[iep]
+vectorized_bus    = true
+embedding_model   = "nomic-embed-text"
+rat_threshold     = 0.97
+epsilon_continue  = 0.1
+epsilon_replan    = 0.3
+epsilon_escalate  = 0.6
+
+[telemetry]
+enabled       = true
+poll_interval_s = 2.0
+
+[ollama]
+host = "http://127.0.0.1:11434"
+
+Protocols
+DASP — Debate-as-a-Service Protocol
+DASP (v1.1) governs the deliberation layer. It routes a task through structured rounds of independent agent reasoning, using mathematical signal superposition to detect consensus, deadlock, and pathological agreement — without parsing agent explanations for routing decisions.
+Session lifecycle:
+SNAPSHOT → INITIAL_ROUND → DEBATE_ROUNDS → CONSENSUS_CHECK → RESULT
+Signal model:
+Each agent emits a structured signal alongside its textual explanation:
+S_g(H) = Σ R_eff(a) · confidence · generative_strength   (polarity ≥ 0)
+S_i(H) = Σ R_eff(a) · confidence · inhibitory_pressure   (polarity ≤ 0)
+S_net  = S_g - S_i
+Gates (evaluated in priority order):
+Gate
+Condition
+Action
+Inhibition (P1)
+S_i ≥ τ · S_g
+Phase-cancel hypothesis; route to OPTIMIZE or ESCALATE
+Stall (P2)
+|ΔS_net| < ε
+OPTIMIZE phase; inject devil's advocate if configured
+Consensus (P3)
+S_net ≥ θ
+TERMINATE; emit Intention Envelope
+
+Asymmetric tiers:
+Effector uses a two-tier debate model. Tier-1 agents (fast, local) run all standard rounds. If a stall or inhibition gate fires, a Tier-2 arbiter (slower, higher-capacity) is invoked to break the deadlock. This keeps the common case fast while preserving high-quality resolution for contested decisions.
+Agent Reputation System:
+Agent signal contributions are weighted by a per-agent Reputation Score R(a) ∈ [0, 1], derived from the historical accuracy of each agent's forward model predictions. New agents start at R = 0.5. A floor of R_floor = 0.15 prevents any agent from being permanently silenced.
+Serialization boundary (Two-Phase Adapter):
+All agents use the two-phase adapter pattern. The reasoning phase (free-form LLM output) is separated from the characterization phase (structured signal extraction). The Characterizer maps the reasoning into a 4-Dimensional Signal Manifold:
+1. Polarity: Support (1), Oppose (-1), or Genuine Uncertainty (0) — enabling Epistemic Humility.
+2. Confidence: Degree of certainty [0.0, 1.0].
+3. Generative Strength: Independent weight for action [0.0, 1.0].
+4. Inhibitory Pressure: Independent weight against action [0.0, 1.0].
+
+This explicit decoupling prevents sycophantic convergence and enables advanced behaviors like Compassion Fatigue (yielding to user agency by decaying generative strength without flipping polarity). The signal fields are never parsed from raw LLM text.
+
+
+IEP — Intention Envelope Protocol
+IEP (v1.1) governs the execution layer. Every state write is preceded by a typed Intention Envelope that declares the agent's intent, binds the action to the world-state snapshot the agent reasoned from, and carries a forward model prediction used for post-execution divergence scoring.
+Verification order (mirrors IEPVerifier.verify()):
+Schema completeness
+TTL freshness
+Snapshot hash match (or cosine similarity if IEP-A3 is active)
+Abort condition evaluation
+Role authorization
+Operational modes:
+Mode
+Description
+DELIBERATIVE
+All actions require a completed DASP session. Default.
+MIXED
+Routine actions use pre-issued Reflex Authorization Tokens; novel actions use full DASP.
+REFLEX
+All actions require a valid RAT. No DASP during execution.
+SUPERVISED
+DASP runs normally, but a human operator must ACK before execution.
+
+Post-execution comparison:
+After each acknowledged write, the State Bus compares the actual delta against the expected_state_change prediction. Divergence above ε_replan triggers a replan signal. Divergence above ε_escalate halts downstream actions and escalates to the Coordinator.
+Vectorized State Bus (IEP-A3):
+When enabled, world-state snapshots are represented as dense float embeddings via nomic-embed-text. Envelope verification uses cosine similarity rather than exact SHA-256 matching, allowing pre-authorized actions to execute when the world is close enough to its deliberated state. The embedding model and similarity threshold are stored in every RAT and verified at execution time.
+
+Reflex Middleware
+The Reflex Middleware provides a local fast path for actions that have been previously deliberated and pre-authorized by a completed DASP session. It is the system's "spinal cord" — deterministic, sub-2ms, and zero LLM calls on the critical path.
+Components:
+Module
+Responsibility
+intent_router.py
+Deterministic regex/string matching of tasks to {verb, target} pairs. Returns None on no-match; caller falls back to DASP.
+rat_store.py
+SQLite-backed Reflex Authorization Token store. WAL journal, thread-safe, atomic execution decrements via RETURNING.
+reflex_engine.py
+Core check sequence. Receives pre-computed state vector; performs no I/O.
+main_loop_reflex.py
+ReflexOrchestrator: drop-in main loop wrapper. Issues RATs after DASP consensus; routes subsequent identical triggers to the fast path.
+
+Reflex check order (mirrors IEP §7 Reflex Envelope Verification):
+RAT lookup by verb/target (prefix matching supported)
+RAT TTL expiry
+Verb/target action match
+Execution count (preliminary; atomic decrement after M4/M5)
+M5 — Critical-key drift guard: desktop.active_window and desktop.active_process are read twice in rapid succession; mutation between reads triggers replan
+M4 — Cosine similarity ≥ rat_similarity_threshold; falls back to SHA-256 hash if no vector is available
+Atomic SQLite decrement (UPDATE … RETURNING)
+Execute + fire async post-execution callback (divergence scoring, reputation update)
+Wiring into the main loop:
+from effector.rat_store import LocalRATStore
+from effector.main_loop_reflex import ReflexOrchestrator
+
+store = LocalRATStore()   # persists across reboots; M4/M5 catch stale state
+
+orchestrator = ReflexOrchestrator(
     state_bus=bus,
-    critical_keys=("desktop.active_window", "desktop.active_process"),
+    rat_store=store,
+    dasp_run_fn=coordinator.run,
+    embedding_model="nomic-embed-text",
     ollama_host="http://127.0.0.1:11434",
 )
-```
 
----
+# Per-task call — returns unified result dict with '_path': 'reflex' | 'dasp'
+result = orchestrator.handle(task, snapshot_hash)
+RAT issuance happens automatically after any DASP session that reaches sufficient consensus (consensus_score ≥ rat_min_confidence). The next occurrence of the same intent takes the reflex path; no configuration required.
+Latency profile:
+Step
+Typical latency
+IntentRouter.route()
+< 0.1 ms
+fetch_embedding() (Ollama)
+20–50 ms
+ReflexEngine.evaluate_reflex()
+< 2 ms
+Full reflex path (no match in RAT store)
+< 0.2 ms (BYPASSED)
+Full DASP debate (3 rounds, 2 × 14B agents)
+30–120 s
 
-## Running
 
-### Continuous loop (requires Ollama)
+MCP Layer — Snug Registry
+The MCP layer exposes the Effector Engine's concept registry as a tool server, enabling agents to query, synthesize, and mutate the Affinity Matrix — a living database of warmth, comfort, and ambient contentment that accumulates knowledge across sessions.
+Snug Registry Server (mcp/registry_mcp.py)
+The registry models the world in terms of three variables — Thermal Valence (θ), Kinetic Fidget (φ), and Social Mass (μ) — across 48 named entities (from Fc: Felis catus to Hg: Big Hug) and 55 category-pair bond strengths. Bond strengths drift over time as the cultivation loop commits observed outcomes.
+Tools:
+Tool
+Description
+lookup_entity(sym)
+Full entity data by two-character symbol — θ, φ, μ, SnugProphecy, stability rating
+search_entities(...)
+Filter by name, category, value thresholds; sorted by SnugProphecy score
+get_bond(cat_a, cat_b)
+Current bond affinity and interpretation between two categories
+synthesize(symbols, commit_ack)
+Multi-entity synthesis forecast; commit_ack=True executes, mutates bonds, and persists
+hydrate_template(src, tgt, type)
+Generate liturgical petition text for DASP explanation fields
+find_resonant(sym, top_n)
+Lateral resonance — similar-profile substitutes using isomorphism scoring
+get_agent_messages(...)
+Current WEAVE/SPARK/ARBITER deliberation queue
+get_ontology()
+Full ontology reference — variables, categories, formulas, state file path
 
-```bash
-# Default: poll every 5s, debate every 30s, run forever
-python main_loop.py
+State persistence:
+All mutations flow through synthesize(commit_ack=True), which draws actual_theta = predicted ± random[-0.06, +0.16], adjusts all category-pair bond strengths by ±0.02, and writes the result to registry_state.json atomically. Bond strengths are clamped to [-1, 1] and accumulate truth over the lifetime of the registry.
+Registration in mcp_servers config:
+{
+  "mcpServers": {
+    "snug-registry": {
+      "command": "python",
+      "args": ["mcp/registry_mcp.py"]
+    }
+  }
+}
+Dependency: pip install mcp
 
-# Options
-python main_loop.py \
-  --poll-interval 3 \
-  --debate-interval 60 \
-  --max-cycles 10 \
-  --queue-file iep_queue.jsonl \
-  --no-color
-```
+Cultivation Loop (mcp/cultivation_loop.py)
+A background agent loop that autonomously explores the entity space and proposes new combinations. It submits proposals to the local Reflex Orchestrator. If a combination is novel, it runs a full three-agent DASP session. If it has been deliberated previously, it hits the Reflex Cache (<2ms). Approved syntheses pass through the IEP Validator (the Two-Key Execution Boundary) before being committed to the Affinity Matrix — growing the registry's learned bond strengths overnight.
 
-The loop prints a structured cycle report for each iteration:
+Agents:
+Agent
+Role
+WEAVE-3
+Proposal agent — argues for the synthesis using θ/φ/μ values
+SPARK-2
+Evaluation agent — surfaces risks and refinements
+ARBITER
+Consensus authority — issues ACK or NACK as structured JSON
 
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Cycle 1  —  2026-03-29T14:22:01+00:00
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  ── A1 — Telemetry Snapshot ──
-  CPU   :  18.3%  RAM:  61.4%  Pressure: 0.187
-  Window: Visual Studio Code  [Code.exe]
-  Net↓  : 12.4 KB/s   Hash: 3fa8c21b9e004d1a...
+ACK criteria (all must hold):
+SnugProphecy ≥ 14
+Deficit count ≤ 1 (compound deficits without a high-θ anchor are forbidden)
+Stability is not Unstable (unless SPARK-2 explicitly endorses with cause)
+# Night-only (22:00–06:00 local), 6 sessions/run, 1h between runs:
+python mcp/cultivation_loop.py
 
-  ── A2 — Asymmetric DASP Debate ──
-    [R1] LOCAL round started
-      ✅ [mistral] conf=0.82  System is healthy. No action required.
-      ✅ [qwen]    conf=0.76  Pressure within normal bounds.
-      Signal [H1]: S_g=1.214  S_i=0.000  S_net=1.214
-  ✅ Consensus cleared: score=1.000  H=H1
+# Background daemon:
+nohup python mcp/cultivation_loop.py >> cultivation.out 2>&1 &
 
-  ── A3 — IEP Envelope Emission ──
-  Envelope ID   : 7f3a1b2c9d4e...
-  Checks passed : schema_completeness, ttl_freshness, snapshot_hash,
-                  abort_conditions, role_authorization
+# All hours, faster cadence:
+python mcp/cultivation_loop.py --continuous --sessions 4 --interval 900
 
-  📨 QUEUE → ✅ [ACK] envelope=7f3a1b2c... verb=WRITE
-```
+# Dry-run — forecasts only, no API calls, no commits:
+python mcp/cultivation_loop.py --dry-run --sessions 3
 
-### Tests (no Ollama required)
+# Show accumulated cultivation statistics:
+python mcp/cultivation_loop.py --stats
+Session log: mcp/cultivation_log.jsonl — append-only record of every session, including WEAVE argument, SPARK evaluation, ARBITER verdict, actual_theta, and all bond mutations applied. Main Loop & Live Dashboard (main_loop.py) The primary entry point for the headless reasoning engine. It utilizes `rich` to render a live, terminal-based UX Dashboard featuring: * Telemetry Panel: Live OS metrics (CPU, RAM, System Pressure, Active Window). * Agent Signal Manifold: Real-time S_g, S_i, and S_net tracking for active DASP debates. * IEP Queue: A live tail of the envelope processing log (ACK/NACK verdicts and failure reasons). Telemetry
+Dependency: pip install openai (routes to local Ollama via OpenAI-compatible API)
 
-```bash
-pip install pytest psutil
-python -m pytest tests/ -v
-```
+Telemetry
+When --telemetry is enabled (the default), a background TelemetryPoller writes live OS metrics to the State Bus every --poll-interval seconds. Agents receive this data as world-state context on every debate round.
+Keys written to the State Bus:
+Key
+Description
+cpu.percent.total
+Total CPU utilization
+cpu.percent.per_core
+Per-core utilization list
+ram.percent
+RAM utilization
+swap.percent
+Swap utilization
+disk.read_mb_s / disk.write_mb_s
+Disk throughput
+net.sent_kb_s / net.recv_kb_s
+Network throughput
+desktop.active_window
+Foreground window title
+desktop.active_process
+Foreground process name
+system.pressure
+Composite pressure score ∈ [0, 1]
+system.thermal_alert
+true when pressure > 0.85
 
-All tests mock Ollama calls. No API keys, no network.
+The desktop.active_window and desktop.active_process keys are treated as critical keys by the Reflex Middleware — a change to either triggers an M5 replan regardless of cosine similarity.
 
----
+Testing
+# Run all tests
+pytest
 
-## Configuration
+# Run the reflex middleware suite specifically
+pytest tests/test_reflex_middleware.py -v
 
-### Tier presets
+# Run with coverage
+pytest --cov=effector --cov-report=term-missing
+Test suite breakdown:
+Suite
+Tests
+Coverage
+test_reflex_middleware.py
+31
+LocalRATStore, IntentRouter, ReflexEngine, ReflexOrchestrator, RAT issuance
+test_signal_engine.py
+—
+Signal superposition, gate evaluation, copy/swap detection
+test_multi_agent_debate.py
+—
+Full DASP session lifecycle
+test_iep_a3.py
+—
+Vectorized State Bus, cosine verification
+test_escalation_and_drift.py
+—
+Tier-2 escalation, snapshot drift handling
+test_effector_loop.py
+—
+End-to-end session with IEP verification
 
-```python
-TierConfig(
-    name="mistral",
-    model="mistral",               # Ollama model name
-    host="http://127.0.0.1:11434",
-    temperature=0.65,
-    timeout_s=60.0,
-    max_rounds=3,
-)
-```
+All tests mock Ollama API calls. No live model inference is required to run the test suite.
 
-To use a remote Ollama instance for Tier-2, set `host` to the remote address.
-
-### Gate thresholds
-
-| Parameter | Default | Meaning |
-|-----------|---------|---------|
-| `tau_suppression` | 0.5 | S_i / S_g ratio that fires the Inhibition gate |
-| `theta_consensus` | 0.65 | Minimum S_net to clear the Consensus gate |
-| `epsilon_stall` | 0.04 | Maximum \|ΔS_net\| before Stall gate fires |
-| `epsilon_continue` | 0.1 | Divergence threshold for normal IEP continuation |
-| `epsilon_replan` | 0.3 | Divergence threshold for replan signal |
-| `epsilon_escalate` | 0.6 | Divergence threshold for escalation signal |
-
-Lower `tau_suppression` makes the Inhibition gate more sensitive. Lower `theta_consensus` makes consensus easier to reach. Lower `epsilon_stall` makes the Stall gate more aggressive.
-
----
-
-## Project Structure
-
-```
+Project Structure
 effector/
-├── main_loop.py                          # A1 + A2 + A3 integration loop
-├── iep_queue.jsonl                       # runtime — persisted envelope log
-│
-└── src/effector/
-    ├── telemetry/
-    │   ├── state_keys.py                 # canonical KEYS singleton
-    │   └── poller.py                     # TelemetryPoller (A1)
-    │
-    ├── adapters/
-    │   ├── asymmetric_dasp.py            # AsymmetricDASPCoordinator (A2)
-    │   └── ollama_adapter.py             # base Ollama adapter (upstream)
-    │
-    ├── queue/
-    │   └── iep_queue.py                  # IEPBuilder, IEPValidator, EnvelopeQueue (A3)
-    │
-    ├── bus.py                            # StateBus (upstream)
-    ├── coordinator.py                    # DASPCoordinator (upstream)
-    ├── dasp.py                           # DASP-1.0 Pydantic schemas (upstream)
-    ├── iep.py                            # IEP-1.0 Pydantic schemas (upstream)
-    ├── session.py                        # EffectorSession API (upstream)
-    ├── signal_engine.py                  # Signal superposition engine (upstream)
-    └── verifier.py                       # IEPVerifier (upstream)
+├── src/effector/
+│   ├── adapters/
+│   │   ├── asymmetric_dasp.py      # Two-tier coordinator (local + cloud arbiter)
+│   │   ├── ollama_adapter.py       # OllamaAgent wrapper
+│   │   └── two_phase_adapter.py    # Reasoning + characterizer pipeline
+│   ├── cli/
+│   │   ├── main.py                 # Typer app entry point
+│   │   ├── run_cmd.py              # `effector run` implementation
+│   │   ├── config_cmd.py           # `effector config` subcommands
+│   │   ├── models_cmd.py           # `effector models` subcommands
+│   │   ├── display.py              # Rich terminal output helpers
+│   │   └── settings.py             # TOML config loading/saving
+│   ├── queue/
+│   │   └── iep_queue.py            # IEPBuilder, IEPValidator, EnvelopeQueue
+│   ├── schemas/
+│   │   ├── dasp.py                 # Pydantic models for DASP messages
+│   │   └── iep.py                  # Pydantic models for IEP envelopes
+│   ├── telemetry/
+│   │   ├── poller.py               # Background OS telemetry poller
+│   │   └── state_keys.py           # Typed key constants
+│   ├── bus.py                      # StateBus — immutable world-state vector
+│   ├── coordinator.py              # DASPCoordinator
+│   ├── session.py                  # EffectorSession, IEPExecutor
+│   ├── signal_engine.py            # SignalEngine — manifold, gates, triggers
+│   ├── verifier.py                 # IEPVerifier — envelope verification
+│   ├── intent_router.py            # Deterministic intent routing (reflex)
+│   ├── rat_store.py                # SQLite RAT store (reflex)
+│   ├── reflex_engine.py            # ReflexEngine — fast path (reflex)
+│   └── main_loop_reflex.py         # ReflexOrchestrator — main loop wiring
+├── mcp/
+│   ├── registry_mcp.py             # Snug Registry MCP server (8 tools)
+│   ├── cultivation_loop.py         # Nightly three-agent cultivation loop
+│   └── registry_state.json         # Live Affinity Matrix (persisted, mutable)
+├── tests/
+│   ├── test_reflex_middleware.py
+│   ├── test_signal_engine.py
+│   ├── test_multi_agent_debate.py
+│   ├── test_iep_a3.py
+│   ├── test_escalation_and_drift.py
+│   └── test_effector_loop.py
+├── docs/
+│   ├── worldbuilding/              # Narrative canon, agent theology, lore
+│   ├── style/                      # Visual style bible, look-dev, Glimmer design
+│   └── protocol/                   # DASP-1.1 + IEP-1.1 specification
+├── examples/                       # Usage examples and integration demos
+├── aggregate.py                    # Profile-aware context aggregator (see below)
+├── context.toml                    # Aggregator manifest — zones, profiles, handling
+├── main_loop.py                    # Standalone orchestration entry point
+└── pyproject.toml
 
+Contributing
+Development setup:
+pip install -e ".[dev]"
+Before submitting a PR:
+# Run the full test suite
+pytest
+
+# Type-check
+mypy src/effector
+
+# Lint
+ruff check src/effector
+Protocol changes:
+Changes to DASP or IEP behaviour require updating both the relevant schema in src/effector/schemas/ and the protocol specification document. The protocol spec is the source of truth; the implementation must conform to it, not the reverse.
+The Reflex Middleware check order in reflex_engine.py must always mirror the IEP §7 Reflex Envelope Verification sequence. Any divergence is a correctness bug.
+Adding intent routes:
+New deterministic routing patterns belong in intent_router.py's _build_table() function. Patterns are evaluated in order; first match wins. Do not use LLM calls inside the router.
+Future: distributed deployment
+The current LocalRATStore (SQLite) is intentionally architected to translate cleanly to a Redis-backed distributed store. The three core methods — get_candidate_rats, decrement_and_fetch, and invalidate_rat — have 1:1 equivalents as Redis Lua scripts when deploying Effector as a multi-node swarm.
+
+Session Workflow — Context Aggregator
+The project includes a profile-aware context aggregator (aggregate.py) that prepares the right files for each type of Claude session. It reads context.toml at the project root, which declares every includable zone, its profile membership, and how to handle large data files.
+The problem it solves: The project has important work spread across src/, mcp/, docs/, tests/, and the project root. A fixed-scope aggregator leaves out anything outside its scope, causing doc updates to miss the MCP layer, code sessions to miss the style bible, and so on.
+Profiles:
+# Core engine logic, protocols, tests
+python aggregate.py --profile code
+
+# MCP tools + registry + src schemas
+python aggregate.py --profile mcp
+
+# README + worldbuilding + style bible + protocol spec
+python aggregate.py --profile docs
+
+# Everything — for architecture reviews
+python aggregate.py --profile full
+
+# See what a profile would include without producing output
+python aggregate.py --profile mcp --dry-run
+
+# Override token budget
+python aggregate.py --profile full --budget 300000
+
+# Force-include a data file verbatim (e.g. full JSON dump)
+python aggregate.py --profile mcp --include-file mcp/registry_state.json
+Smart data file handling:
+registry_state.json is summarized rather than dumped verbatim — ~120 tokens instead of ~12,000. The summary includes entity count, category breakdown, deficit and radiant entity lists, top-5 entities by θ, bond strength range, and strongest/weakest bonds. All actionable context, no noise. Pass --include-file mcp/registry_state.json when you need the full JSON.
+The manifest (context.toml):
+Edit context.toml to add zones as the project grows. Each zone declares a path, which profiles include it, how to handle it (verbatim | summarize | header_only | skip), a token cap, and a priority. The aggregator includes zones in priority order and stops at the token budget.
+Where to put things so the aggregator finds them:
+Content type
+Canonical location
+Profile
+Core Python source
+src/effector/
+code
+MCP tools and servers
+mcp/
+mcp
+Live registry / state data
+mcp/registry_state.json
+mcp (summarized)
+Protocol specification
+docs/protocol/
+code, docs
+Worldbuilding / narrative canon
+docs/worldbuilding/
+docs
+Visual style bible / look-dev
+docs/style/
+docs
+Test suite
 tests/
-├── test_effector_loop.py                 # 74 tests — A1 / A2 / A3 base coverage
-└── test_iep_a3.py                        # 37 tests — IEP-A3 vectorized bus
-```
+code
+Entry points, config
+project root
+all profiles
 
----
 
-## Test Coverage
+License
+MIT
 
-### Base suite (`test_effector_loop.py`) — 74 tests
-
-| Class | Tests | What's covered |
-|-------|-------|----------------|
-| `TestTelemetryStateKeys` | 5 | Key uniqueness, namespace groupings |
-| `TestPressureModel` | 6 | Parametric range checks, monotonicity, threshold |
-| `TestTelemetryPoller` | 9 | StateBus writes, rate bounds, threading, callbacks |
-| `TestSignalMath` | 11 | Gate math — all three gate conditions, multi-hypothesis routing |
-| `TestAsymmetricCoordinatorMocked` | 6 | Consensus, stall→tier-2, inhibition→tier-2, abstention, event ordering |
-| `TestIEPBuilder` | 6 | Envelope shape, ESC presence, confidence clamping, ESC aggregation |
-| `TestIEPValidator` | 16 | All 5 NACK paths, all 8 comparison operators, fail-fast ordering, post-execution divergence |
-| `TestEnvelopeQueue` | 9 | Put/get, stats, drain, JSONL persistence, thread safety (5×10 concurrent) |
-| `TestIntegrationPipeline` | 2 | End-to-end A1→A2→A3 with mocked Ollama; snapshot hash chain |
-
-### IEP-A3 suite (`test_iep_a3.py`) — 37 tests
-
-| Class | Tests | What's covered |
-|-------|-------|----------------|
-| `TestStateBusSerialize` | 9 | Volatile key exclusion, determinism, sorting, pipe format, key filtering |
-| `TestCoordinatorVectorization` | 4 | Vector fetched/skipped, None degradation, threshold/model propagation |
-| `TestIEPBuilderVectorRouting` | 6 | Vector in envelope, hash-only path, version string, null-vector guard |
-| `TestIEPValidatorCosine` | 6 | ACK above threshold, NACK below, hash fallback paths, non-vectorized bypass |
-| `TestCriticalKeysDriftLock` | 3 | Stable keys pass, disabled lock, custom critical-key set |
-| `TestCosineSimilarityMath` | 7 | Identity, orthogonal, opposite, zero-vector, high-dim, symmetry, scale invariance |
-| `TestEndToEndIEPA3` | 2 | Full A1→A2→A3 ACK on stable state; NACK on drifted state |
-
----
-
-## Dependencies
-
-```
-psutil>=5.9        # OS telemetry
-pydantic>=2.0      # upstream schema validation (dasp.py, iep.py)
-requests           # Ollama HTTP calls
-```
-
-Ollama must be running locally with the target models pulled:
-
-```bash
-ollama pull mistral
-ollama pull qwen2.5-coder:32b
-ollama pull nomic-embed-text         # IEP-A3 vectorization
-ollama pull nemotron                 # cloud arbiter — only pulled on escalation
-```
-
----
-
-## Protocol Compliance
-
-| Feature | Spec ref | Status |
-|---------|----------|--------|
-| Signal superposition (S_g, S_i, S_net) | DASP §6 | ✅ |
-| Inhibition gate P1 | DASP §6 | ✅ |
-| Stall gate P2 | DASP §6 | ✅ |
-| Consensus gate P3 | DASP §6 | ✅ |
-| Asymmetric tier escalation | Extension | ✅ |
-| IEP pre-flight checks (all 5) | IEP §5 | ✅ |
-| Snapshot hash binding (DASP→IEP joint) | Integration §1 | ✅ |
-| Post-execution divergence + replan signal | IEP §6 | ✅ |
-| ESC aggregation from agent declarations | IEP §3 | ✅ |
-| JSONL audit log (append-only) | IEP §1 | ✅ |
-| Deterministic state serialization | IEP-A3.1 | ✅ |
-| Orchestrator-side vectorization | IEP-A3.1 | ✅ |
-| Cosine similarity snapshot verification | IEP-A3 M4 | ✅ |
-| Critical-key semantic drift lock | IEP-A3 M5 | ✅ |
-| Hash fallback on embedding failure | IEP-A3.3 | ✅ |
-| Agent reputation weighting | DASP-A1 | 🟡 stub — R=0.5 for all agents |
-| Reflex bypass (RAT issuance) | IEP-A1 | ⬜ not implemented |
-
----
-
-## Status
-
-Experimental. The A1/A2/A3 layer is production-shaped but interfaces may change. The upstream protocol library (bus, coordinator, schemas, verifier) is from the base Effector project. IEP-A3 is complete at the orchestrator level; RAT-based reflex bypass (IEP-A1) is the natural next extension.

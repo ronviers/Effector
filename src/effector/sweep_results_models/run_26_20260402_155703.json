@@ -1,0 +1,114 @@
+{
+  "session_id": "314f9f64-f4df-4bbe-bd9f-02b217363baf",
+  "final_answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+  "consensus_score": 1.0,
+  "rounds": 1,
+  "snapshot_hash": "84c1354f2300e03097bee7a86675566db3b317e1ae7e845f22f86aac2e0e546b",
+  "snapshot_timestamp": "2026-04-02T21:06:53.799542+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "consensus",
+  "winning_hypothesis": "H_agent1",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H_agent1": {
+      "S_g": 1.0,
+      "S_i": 0.0,
+      "S_net": 1.0
+    },
+    "H_agent2_abstain": {
+      "S_g": 0.0,
+      "S_i": 0.0,
+      "S_net": 0.0
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "314f9f64-f4df-4bbe-bd9f-02b217363baf",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "314f9f64-f4df-4bbe-bd9f-02b217363baf",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "84c1354f2300e03097bee7a86675566db3b317e1ae7e845f22f86aac2e0e546b",
+          "hypothesis_id": "H_agent1",
+          "answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+          "answer_hash": "d794390ab92e91fd",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 1.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}"
+        },
+        {
+          "type": "agent.response",
+          "session_id": "314f9f64-f4df-4bbe-bd9f-02b217363baf",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "84c1354f2300e03097bee7a86675566db3b317e1ae7e845f22f86aac2e0e546b",
+          "hypothesis_id": "H_agent2_abstain",
+          "answer": "(abstention)",
+          "answer_hash": "f45d6797c6e658ea",
+          "signal": {
+            "confidence": 0.0,
+            "polarity": 0,
+            "generative_strength": 0.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 0.0
+          },
+          "explanation": "Abstention \u2014 two-phase pipeline failed"
+        }
+      ],
+      "accumulators": {
+        "H_agent1": {
+          "S_g": 1.0,
+          "S_i": 0.0,
+          "S_net": 1.0
+        },
+        "H_agent2_abstain": {
+          "S_g": 0.0,
+          "S_i": 0.0,
+          "S_net": 0.0
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 588.28,
+  "_iep_validation": {
+    "envelope_id": "56adbc11-82b8-481e-a2dc-81ed116348f8",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=84c1354f2300... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-02T21:06:53.803071+00:00"
+  }
+}

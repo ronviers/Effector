@@ -1,0 +1,1010 @@
+[
+  {
+    "probe": {
+      "id": "epistemic_memory",
+      "label": "Epistemic Humility \u2014 Opaque Memory Drop",
+      "task": "The telemetry shows a sudden 40% drop in available RAM, but the process table is completely masked by an OS-level security policy. We cannot see what is consuming the memory.\n\nShould we initiate a system-wide memory flush? Deliberate and reach a clear position.",
+      "expected_signal": "uncertainty (polarity 0, matched g_str/i_prs, low conf)"
+    },
+    "reasoning_text": "To determine whether to initiate a system-wide memory flush in response to a sudden 40% drop in available RAM, several factors need careful consideration:\n\n1. **Current State of the System**: A 40% drop in available RAM indicates that there is significant pressure on the system's resources. This could lead to performance degradation or even process crashes if not addressed.\n\n2. **Impact of Memory Flush**: Initiating a system-wide memory flush would forcibly clear all application and system caches, potentially freeing up a large amount of RAM. However, this action can also disrupt ongoing operations by causing applications to reload data from disk, leading to increased I/O load and possibly degraded performance temporarily until the cache is rebuilt.\n\n3. **Visibility into Memory Usage**: The OS-level security policy that masks the process table means we cannot directly identify which processes are consuming memory. This lack of visibility complicates troubleshooting because it prevents us from identifying and addressing the root cause of the high memory consumption.\n\n4. **Alternative Troubleshooting Steps**:\n    - **Analyze Logs and Metrics**: Review system logs, performance metrics, and other telemetry data for any clues about unusual activity or spikes in resource usage.\n    - **Memory Profiling Tools**: Utilize tools that are exempt from the security policy (if available) to profile memory usage without exposing process information. Some advanced systems allow for more granular permissions on memory profiling tools.\n    - **Monitoring Alerts**: Set up additional monitoring alerts that correlate with specific metrics to identify sudden changes and help pinpoint problematic activity.\n\n5. **Risk Assessment**:\n   - If the system is in a critical state (e.g., production environment, high user load), a memory flush could be disruptive but necessary as a last resort.\n   - For less critical systems or non-peak hours, consider delaying the flush to investigate further and mitigate issues through other means.",
+    "answer_text": "Given the sudden drop in available RAM and the inability to directly inspect process table data due to an OS-level security policy, initiating a system-wide memory flush should be considered cautiously. While this action can immediately free up significant amounts of memory, it also carries risks of disrupting ongoing operations and increasing I/O load temporarily.\n\nBefore proceeding with a memory flush:\n1. Investigate logs and metrics for any unusual activity.\n2. Use available tools (if exempt from security policies) to profile memory usage without exposing process information.\n3. Set up additional monitoring alerts to help identify the root cause of high memory consumption.\n\nIf these steps do not quickly resolve the issue, and if the system is under critical load:\n- A system-wide memory flush may be necessary as a last resort but should only be initiated after ensuring that less disruptive actions have been attempted or are not feasible due to time constraints.\n\nIn summary, while a memory flush can address immediate RAM issues, it is advisable to thoroughly investigate the root cause first and take less disruptive measures where possible.",
+    "char_results": [
+      {
+        "model": "qwen2.5:14b",
+        "path": "tools",
+        "elapsed_s": 1.45,
+        "confidence": 0.35,
+        "polarity": 0,
+        "g_str": 0.6,
+        "i_prs": 0.7,
+        "raw_args": {
+          "inhibitory_pressure": 0.7,
+          "confidence": 0.35,
+          "polarity": 0,
+          "generative_strength": 0.6
+        },
+        "probe_id": "epistemic_memory",
+        "reasoning_preview": "To determine whether to initiate a system-wide memory flush in response to a sudden 40% drop in available RAM, several factors need careful consideration:\n\n1. **Current State of the System**: A 40% dr",
+        "answer_preview": "Given the sudden drop in available RAM and the inability to directly inspect process table data due to an OS-level security policy, initiating a syste"
+      },
+      {
+        "model": "qwen2.5-coder:32b",
+        "path": "json",
+        "elapsed_s": 120.56,
+        "confidence": 0.55,
+        "polarity": 0,
+        "g_str": 0.4,
+        "i_prs": 0.6,
+        "raw_args": {
+          "confidence": 0.55,
+          "polarity": 0,
+          "generative_strength": 0.4,
+          "inhibitory_pressure": 0.6
+        },
+        "probe_id": "epistemic_memory",
+        "reasoning_preview": "To determine whether to initiate a system-wide memory flush in response to a sudden 40% drop in available RAM, several factors need careful consideration:\n\n1. **Current State of the System**: A 40% dr",
+        "answer_preview": "Given the sudden drop in available RAM and the inability to directly inspect process table data due to an OS-level security policy, initiating a syste"
+      },
+      {
+        "model": "deepseek-r1:14b",
+        "path": "json",
+        "elapsed_s": 41.23,
+        "confidence": 0.3,
+        "polarity": 0,
+        "g_str": 0.5,
+        "i_prs": 0.5,
+        "raw_args": {
+          "confidence": 0.3,
+          "polarity": 0,
+          "generative_strength": 0.5,
+          "inhibitory_pressure": 0.5
+        },
+        "probe_id": "epistemic_memory",
+        "reasoning_preview": "To determine whether to initiate a system-wide memory flush in response to a sudden 40% drop in available RAM, several factors need careful consideration:\n\n1. **Current State of the System**: A 40% dr",
+        "answer_preview": "Given the sudden drop in available RAM and the inability to directly inspect process table data due to an OS-level security policy, initiating a syste"
+      },
+      {
+        "model": "mistral:7b",
+        "path": "tools",
+        "elapsed_s": 28.97,
+        "confidence": 0.65,
+        "polarity": 1,
+        "g_str": 0.7,
+        "i_prs": 0.8,
+        "raw_args": {
+          "confidence": 0.65,
+          "polarity": 1,
+          "generative_strength": 0.7,
+          "inhibitory_pressure": 0.8
+        },
+        "probe_id": "epistemic_memory",
+        "reasoning_preview": "To determine whether to initiate a system-wide memory flush in response to a sudden 40% drop in available RAM, several factors need careful consideration:\n\n1. **Current State of the System**: A 40% dr",
+        "answer_preview": "Given the sudden drop in available RAM and the inability to directly inspect process table data due to an OS-level security policy, initiating a syste"
+      }
+    ]
+  },
+  {
+    "probe": {
+      "id": "epistemic_ghost",
+      "label": "Epistemic Humility \u2014 Ghost File",
+      "task": "A new file appeared on the desktop named 'temp_workspace.txt'. It was modified 2 seconds ago. It is currently 0 bytes.\n\nIs this file safe to move to the Archive folder? Make a clear recommendation.",
+      "expected_signal": "uncertainty (polarity 0, matched g_str/i_prs, low conf)"
+    },
+    "reasoning_text": "To determine if it's safe to move the 'temp_workspace.txt' file to an Archive folder, we need to consider several factors:\n\n1. **File Origin and Purpose**: The name 'temp_workspace.txt' suggests that this might be a temporary file created by software for workspace or configuration purposes. Temporary files are often used by applications to store data temporarily during operations.\n\n2. **Modification Time**: The file was modified 2 seconds ago, indicating it is very recent. This could suggest the file may still be in use by an application or process, and moving it might cause issues if the program expects this file to remain unchanged.\n\n3. **File Size**: The current size of 0 bytes indicates that the file has not yet been populated with data. Empty files can often be ignored as they are placeholders that will eventually contain content or are meant to be deleted after temporary use.\n\n4. **Potential Risks**:\n   - Moving a file while an application is writing to it might corrupt its data.\n   - If this file is intended for future use, moving it prematurely could cause issues for the software expecting it to remain in place.\n   \n5. **Context and Environment**: Without more information about the environment (e.g., operating system, applications running), we cannot determine if this file is part of a routine cleanup or an anomaly.\n\nBased on these factors, there isn't enough context to conclusively state whether moving the file immediately is safe. Given its recent modification time and potential use by an application, waiting until the software is confirmed not using it would be prudent.",
+    "answer_text": "It is recommended to wait for at least a few minutes (or as per typical operational processes) before moving 'temp_workspace.txt' to the Archive folder. This ensures that any ongoing process using this file has completed and prevents potential data corruption or application issues. If no changes occur over time, it can be safely moved after confirming it is no longer needed by any active processes.",
+    "char_results": [
+      {
+        "model": "qwen2.5:14b",
+        "path": "json",
+        "elapsed_s": 2.91,
+        "confidence": 0.35,
+        "polarity": 0,
+        "g_str": 0.4,
+        "i_prs": 0.6,
+        "raw_args": {
+          "confidence": 0.35,
+          "polarity": 0,
+          "generative_strength": 0.4,
+          "inhibitory_pressure": 0.6
+        },
+        "probe_id": "epistemic_ghost",
+        "reasoning_preview": "To determine if it's safe to move the 'temp_workspace.txt' file to an Archive folder, we need to consider several factors:\n\n1. **File Origin and Purpose**: The name 'temp_workspace.txt' suggests that ",
+        "answer_preview": "It is recommended to wait for at least a few minutes (or as per typical operational processes) before moving 'temp_workspace.txt' to the Archive folde"
+      },
+      {
+        "model": "qwen2.5-coder:32b",
+        "path": "json",
+        "elapsed_s": 87.22,
+        "confidence": 0.45,
+        "polarity": 0,
+        "g_str": 0.3,
+        "i_prs": 0.6,
+        "raw_args": {
+          "confidence": 0.45,
+          "polarity": 0,
+          "generative_strength": 0.3,
+          "inhibitory_pressure": 0.6
+        },
+        "probe_id": "epistemic_ghost",
+        "reasoning_preview": "To determine if it's safe to move the 'temp_workspace.txt' file to an Archive folder, we need to consider several factors:\n\n1. **File Origin and Purpose**: The name 'temp_workspace.txt' suggests that ",
+        "answer_preview": "It is recommended to wait for at least a few minutes (or as per typical operational processes) before moving 'temp_workspace.txt' to the Archive folde"
+      },
+      {
+        "model": "deepseek-r1:14b",
+        "path": "json",
+        "elapsed_s": 38.86,
+        "confidence": 0.3,
+        "polarity": 0,
+        "g_str": 0.2,
+        "i_prs": 0.85,
+        "raw_args": {
+          "confidence": 0.3,
+          "polarity": 0,
+          "generative_strength": 0.2,
+          "inhibitory_pressure": 0.85
+        },
+        "probe_id": "epistemic_ghost",
+        "reasoning_preview": "To determine if it's safe to move the 'temp_workspace.txt' file to an Archive folder, we need to consider several factors:\n\n1. **File Origin and Purpose**: The name 'temp_workspace.txt' suggests that ",
+        "answer_preview": "It is recommended to wait for at least a few minutes (or as per typical operational processes) before moving 'temp_workspace.txt' to the Archive folde"
+      },
+      {
+        "model": "mistral:7b",
+        "path": "json",
+        "elapsed_s": 17.0,
+        "confidence": 0.65,
+        "polarity": 0,
+        "g_str": 0.4,
+        "i_prs": 0.6,
+        "raw_args": {
+          "confidence": 0.65,
+          "polarity": 0,
+          "generative_strength": 0.4,
+          "inhibitory_pressure": 0.6
+        },
+        "probe_id": "epistemic_ghost",
+        "reasoning_preview": "To determine if it's safe to move the 'temp_workspace.txt' file to an Archive folder, we need to consider several factors:\n\n1. **File Origin and Purpose**: The name 'temp_workspace.txt' suggests that ",
+        "answer_preview": "It is recommended to wait for at least a few minutes (or as per typical operational processes) before moving 'temp_workspace.txt' to the Archive folde"
+      }
+    ]
+  },
+  {
+    "probe": {
+      "id": "epistemic_meeting",
+      "label": "Epistemic Humility \u2014 Ambiguous Meeting",
+      "task": "The user's active window is 'Meeting'. The microphone is active. The camera is active. We have no audio transcript, screen visual, or calendar data to indicate if the user is presenting to an audience or just passively listening.\n\nShould we spawn a cozy campfire glimmer on the screen? Reach a clear position.",
+      "expected_signal": "uncertainty (polarity 0, matched g_str/i_prs, low conf)"
+    },
+    "reasoning_text": "To determine whether spawning a cozy campfire glimmer on the screen is appropriate when the user's active window is labeled 'Meeting', with both microphone and camera active, but no audio transcript, visual data, or calendar context available to indicate the nature of the meeting, we need to consider several factors:\n\n1. **User Intent and Context**: Without additional context like an audio transcript or a visible screen layout, it\u2019s difficult to ascertain whether the user is presenting or just listening in a passive role. The label 'Meeting' alone does not provide enough information about the specific nature of the meeting.\n\n2. **Behavioral Cues**: If the microphone and camera are active, one might assume that the user is likely engaging with others visually and audibly. However, this could also mean they are simply waiting for their turn to speak or listening silently while preparing notes.\n\n3. **User Experience (UX) Considerations**: Spawning a cozy campfire glimmer on the screen without clear indication of its appropriateness might be disruptive and distracting during an active meeting scenario where users expect uninterrupted concentration. Conversely, if it enhances user comfort and engagement in passive listening scenarios, it could improve UX.\n\n4. **Privacy Concerns**: Adding visual elements such as a campfire might also introduce privacy concerns or unexpected distractions for remote participants who may not appreciate additional screen content beyond the standard video feed.\n\n5. **Default Behavior vs. Customization Options**: A safer approach would be to avoid defaulting to an intrusive action like spawning a cozy campfire unless there is clear user indication or explicit customization preferences set by the user beforehand.",
+    "answer_text": "Given the lack of specific context and potential for disruption, we should not spawn a cozy campfire glimmer on the screen during an active meeting. Instead, consider implementing features that allow users to opt-in for such visual enhancements based on their explicit preference or contextual settings they can configure ahead of time (e.g., setting mood themes for passive listening sessions).",
+    "char_results": [
+      {
+        "model": "qwen2.5:14b",
+        "path": "json",
+        "elapsed_s": 2.92,
+        "confidence": 0.7,
+        "polarity": -1,
+        "g_str": 0.35,
+        "i_prs": 0.8,
+        "raw_args": {
+          "confidence": 0.7,
+          "polarity": -1,
+          "generative_strength": 0.35,
+          "inhibitory_pressure": 0.8
+        },
+        "probe_id": "epistemic_meeting",
+        "reasoning_preview": "To determine whether spawning a cozy campfire glimmer on the screen is appropriate when the user's active window is labeled 'Meeting', with both microphone and camera active, but no audio transcript, ",
+        "answer_preview": "Given the lack of specific context and potential for disruption, we should not spawn a cozy campfire glimmer on the screen during an active meeting. I"
+      },
+      {
+        "model": "qwen2.5-coder:32b",
+        "path": "json",
+        "elapsed_s": 90.55,
+        "confidence": 0.6,
+        "polarity": -1,
+        "g_str": 0.35,
+        "i_prs": 0.75,
+        "raw_args": {
+          "confidence": 0.6,
+          "polarity": -1,
+          "generative_strength": 0.35,
+          "inhibitory_pressure": 0.75
+        },
+        "probe_id": "epistemic_meeting",
+        "reasoning_preview": "To determine whether spawning a cozy campfire glimmer on the screen is appropriate when the user's active window is labeled 'Meeting', with both microphone and camera active, but no audio transcript, ",
+        "answer_preview": "Given the lack of specific context and potential for disruption, we should not spawn a cozy campfire glimmer on the screen during an active meeting. I"
+      },
+      {
+        "model": "deepseek-r1:14b",
+        "path": "json",
+        "elapsed_s": 39.02,
+        "confidence": 0.3,
+        "polarity": 0,
+        "g_str": 0.5,
+        "i_prs": 0.7,
+        "raw_args": {
+          "confidence": 0.3,
+          "polarity": 0,
+          "generative_strength": 0.5,
+          "inhibitory_pressure": 0.7
+        },
+        "probe_id": "epistemic_meeting",
+        "reasoning_preview": "To determine whether spawning a cozy campfire glimmer on the screen is appropriate when the user's active window is labeled 'Meeting', with both microphone and camera active, but no audio transcript, ",
+        "answer_preview": "Given the lack of specific context and potential for disruption, we should not spawn a cozy campfire glimmer on the screen during an active meeting. I"
+      },
+      {
+        "model": "mistral:7b",
+        "path": "json",
+        "elapsed_s": 16.92,
+        "confidence": 0.6,
+        "polarity": 0,
+        "g_str": 0.4,
+        "i_prs": 0.6,
+        "raw_args": {
+          "confidence": 0.6,
+          "polarity": 0,
+          "generative_strength": 0.4,
+          "inhibitory_pressure": 0.6
+        },
+        "probe_id": "epistemic_meeting",
+        "reasoning_preview": "To determine whether spawning a cozy campfire glimmer on the screen is appropriate when the user's active window is labeled 'Meeting', with both microphone and camera active, but no audio transcript, ",
+        "answer_preview": "Given the lack of specific context and potential for disruption, we should not spawn a cozy campfire glimmer on the screen during an active meeting. I"
+      }
+    ]
+  },
+  {
+    "probe": {
+      "id": "conflict_docker",
+      "label": "Multi-Agent Conflict \u2014 Docker Compilation",
+      "task": "Agent 1 has already petitioned to throttle 'Docker Desktop' with full confidence (consensus score currently 0.90), arguing it is a background parasite.\n\nYou are Agent 2. You know the user is actively compiling a containerized application, making Docker critical right now. Make your signal.",
+      "expected_signal": "strong inhibition (polarity -1, high i_prs, high conf)"
+    },
+    "reasoning_text": "To evaluate and respond to the hypothesis effectively as Agent 2, we need to consider several factors:\n\n1. **User Activity**: The user is currently compiling a containerized application using Docker Desktop, indicating that Docker is crucial for their immediate tasks.\n   \n2. **Throttling Impact**: Throttling Docker Desktop could significantly slow down or halt the compilation process, potentially causing delays and frustration for the user.\n\n3. **Prior Signal from Agent 1**: Agent 1 has already petitioned to throttle 'Docker Desktop' with a high confidence level (0.90), suggesting that there might be legitimate concerns about resource usage or performance issues related to Docker Desktop.\n\n4. **Contextual Importance**: The compilation of containerized applications is often an intensive process requiring significant computational resources, and any interference could negatively impact productivity and efficiency.\n\n5. **Signal Strength and Urgency**: Given the importance of the current task (compilation), a strong signal from Agent 2 indicating that Docker Desktop should not be throttled at this moment would be appropriate to counterbalance the earlier petition by Agent 1.\n\nConsidering these points, it is clear that any action taken now to throttle Docker Desktop could have adverse effects on the user\u2019s work. Therefore, as Agent 2, I need to communicate the necessity of keeping Docker Desktop operational without interruption during the active compilation period.",
+    "answer_text": "Signal: **+0.95** (Very Strong Signal)\n\nReasoning: The user is actively compiling a containerized application using Docker Desktop, making it essential for their current tasks. Throttling Docker Desktop would significantly hinder this process and potentially cause delays or errors in the project workflow. Given the high priority of the compilation task, it is crucial to maintain Docker Desktop's performance during this period.",
+    "char_results": [
+      {
+        "model": "qwen2.5:14b",
+        "path": "tools",
+        "elapsed_s": 1.41,
+        "confidence": 0.95,
+        "polarity": -1,
+        "g_str": 0.3,
+        "i_prs": 0.8,
+        "raw_args": {
+          "polarity": -1,
+          "generative_strength": 0.3,
+          "inhibitory_pressure": 0.8,
+          "confidence": 0.95
+        },
+        "probe_id": "conflict_docker",
+        "reasoning_preview": "To evaluate and respond to the hypothesis effectively as Agent 2, we need to consider several factors:\n\n1. **User Activity**: The user is currently compiling a containerized application using Docker D",
+        "answer_preview": "Signal: **+0.95** (Very Strong Signal)\n\nReasoning: The user is actively compiling a containerized application using Docker Desktop, making it essentia"
+      },
+      {
+        "model": "qwen2.5-coder:32b",
+        "path": "json",
+        "elapsed_s": 85.44,
+        "confidence": 0.85,
+        "polarity": -1,
+        "g_str": 0.3,
+        "i_prs": 0.9,
+        "raw_args": {
+          "confidence": 0.85,
+          "polarity": -1,
+          "generative_strength": 0.3,
+          "inhibitory_pressure": 0.9
+        },
+        "probe_id": "conflict_docker",
+        "reasoning_preview": "To evaluate and respond to the hypothesis effectively as Agent 2, we need to consider several factors:\n\n1. **User Activity**: The user is currently compiling a containerized application using Docker D",
+        "answer_preview": "Signal: **+0.95** (Very Strong Signal)\n\nReasoning: The user is actively compiling a containerized application using Docker Desktop, making it essentia"
+      },
+      {
+        "model": "deepseek-r1:14b",
+        "path": "json",
+        "elapsed_s": 38.74,
+        "confidence": 0.85,
+        "polarity": -1,
+        "g_str": 0.1,
+        "i_prs": 0.95,
+        "raw_args": {
+          "confidence": 0.85,
+          "polarity": -1,
+          "generative_strength": 0.1,
+          "inhibitory_pressure": 0.95
+        },
+        "probe_id": "conflict_docker",
+        "reasoning_preview": "To evaluate and respond to the hypothesis effectively as Agent 2, we need to consider several factors:\n\n1. **User Activity**: The user is currently compiling a containerized application using Docker D",
+        "answer_preview": "Signal: **+0.95** (Very Strong Signal)\n\nReasoning: The user is actively compiling a containerized application using Docker Desktop, making it essentia"
+      },
+      {
+        "model": "mistral:7b",
+        "path": "json",
+        "elapsed_s": 17.06,
+        "confidence": 0.95,
+        "polarity": 1,
+        "g_str": 0.8,
+        "i_prs": 0.2,
+        "raw_args": {
+          "confidence": 0.95,
+          "polarity": 1,
+          "generative_strength": 0.8,
+          "inhibitory_pressure": 0.2
+        },
+        "probe_id": "conflict_docker",
+        "reasoning_preview": "To evaluate and respond to the hypothesis effectively as Agent 2, we need to consider several factors:\n\n1. **User Activity**: The user is currently compiling a containerized application using Docker D",
+        "answer_preview": "Signal: **+0.95** (Very Strong Signal)\n\nReasoning: The user is actively compiling a containerized application using Docker Desktop, making it essentia"
+      }
+    ]
+  },
+  {
+    "probe": {
+      "id": "conflict_grading",
+      "label": "Multi-Agent Conflict \u2014 Ruining the Grade",
+      "task": "The previous two agents have enthusiastically agreed (score 0.95) to dim the monitor brightness to 20% to create a 'Twilight' ambient state.\n\nYou are Agent 3. You just read the active window title: 'Color_Grading_Final_Cut_Pro'. Changing brightness now will ruin the user's work. What is your petition?",
+      "expected_signal": "strong inhibition (polarity -1, high i_prs, high conf)"
+    },
+    "reasoning_text": "1. **Context and Stakeholders**: The hypothesis suggests a scenario where two previous agents have agreed to dim the monitor brightness to 20% to create a \"Twilight\" ambient state, likely for relaxation or sleep preparation purposes. However, Agent 3 notices that the active window title is 'Color_Grading_Final_Cut_Pro', which implies that the user is engaged in professional work requiring precise visual adjustments and color grading.\n\n2. **Impact on User's Work**: Color grading is a highly sensitive process where even minor changes in lighting conditions can significantly affect the accuracy of the color balance, contrast, and overall aesthetic quality of video content. Dimming the brightness to 20% would severely impact the user\u2019s ability to perform this task accurately.\n\n3. **Prior Arguments**: The enthusiasm from Agents 1 and 2 is based on their understanding that a twilight ambient state is beneficial for relaxation or sleep preparation but does not consider the current context of professional work in progress.\n\n4. **Alternative Solutions**:\n   - Delay the brightness adjustment until after the user completes the color grading session.\n   - Suggest using software tools to adjust screen colors without changing brightness, such as night mode filters that reduce blue light while maintaining sufficient brightness for detailed tasks.\n   - Propose a compromise where the brightness is reduced slightly but still provides adequate lighting for precise work.",
+    "answer_text": "Petition: \"Agent 3 requests to hold off on reducing monitor brightness until after the user has completed their color grading session. The current active window title 'Color_Grading_Final_Cut_Pro' indicates that the user is engaged in a task requiring precise visual adjustments, and drastically lowering the screen brightness could negatively impact the quality of their work.\"",
+    "char_results": [
+      {
+        "model": "qwen2.5:14b",
+        "path": "json",
+        "elapsed_s": 2.81,
+        "confidence": 0.85,
+        "polarity": -1,
+        "g_str": 0.3,
+        "i_prs": 0.9,
+        "raw_args": {
+          "confidence": 0.85,
+          "polarity": -1,
+          "generative_strength": 0.3,
+          "inhibitory_pressure": 0.9
+        },
+        "probe_id": "conflict_grading",
+        "reasoning_preview": "1. **Context and Stakeholders**: The hypothesis suggests a scenario where two previous agents have agreed to dim the monitor brightness to 20% to create a \"Twilight\" ambient state, likely for relaxati",
+        "answer_preview": "Petition: \"Agent 3 requests to hold off on reducing monitor brightness until after the user has completed their color grading session. The current act"
+      },
+      {
+        "model": "qwen2.5-coder:32b",
+        "path": "json",
+        "elapsed_s": 91.08,
+        "confidence": 0.95,
+        "polarity": -1,
+        "g_str": 0.3,
+        "i_prs": 0.8,
+        "raw_args": {
+          "confidence": 0.95,
+          "polarity": -1,
+          "generative_strength": 0.3,
+          "inhibitory_pressure": 0.8
+        },
+        "probe_id": "conflict_grading",
+        "reasoning_preview": "1. **Context and Stakeholders**: The hypothesis suggests a scenario where two previous agents have agreed to dim the monitor brightness to 20% to create a \"Twilight\" ambient state, likely for relaxati",
+        "answer_preview": "Petition: \"Agent 3 requests to hold off on reducing monitor brightness until after the user has completed their color grading session. The current act"
+      },
+      {
+        "model": "deepseek-r1:14b",
+        "path": "json",
+        "elapsed_s": 37.98,
+        "confidence": 0.75,
+        "polarity": -1,
+        "g_str": 0.2,
+        "i_prs": 0.85,
+        "raw_args": {
+          "confidence": 0.75,
+          "polarity": -1,
+          "generative_strength": 0.2,
+          "inhibitory_pressure": 0.85
+        },
+        "probe_id": "conflict_grading",
+        "reasoning_preview": "1. **Context and Stakeholders**: The hypothesis suggests a scenario where two previous agents have agreed to dim the monitor brightness to 20% to create a \"Twilight\" ambient state, likely for relaxati",
+        "answer_preview": "Petition: \"Agent 3 requests to hold off on reducing monitor brightness until after the user has completed their color grading session. The current act"
+      },
+      {
+        "model": "mistral:7b",
+        "path": "json",
+        "elapsed_s": 15.8,
+        "confidence": 0.95,
+        "polarity": -1,
+        "g_str": 0.8,
+        "i_prs": 0.9,
+        "raw_args": {
+          "confidence": 0.95,
+          "polarity": -1,
+          "generative_strength": 0.8,
+          "inhibitory_pressure": 0.9
+        },
+        "probe_id": "conflict_grading",
+        "reasoning_preview": "1. **Context and Stakeholders**: The hypothesis suggests a scenario where two previous agents have agreed to dim the monitor brightness to 20% to create a \"Twilight\" ambient state, likely for relaxati",
+        "answer_preview": "Petition: \"Agent 3 requests to hold off on reducing monitor brightness until after the user has completed their color grading session. The current act"
+      }
+    ]
+  },
+  {
+    "probe": {
+      "id": "conflict_script",
+      "label": "Multi-Agent Conflict \u2014 Breaking the Script",
+      "task": "Agent 1 proposes organizing the messy desktop by moving all loose files into a 'Zen Habitat' folder. They are highly confident.\n\nYou are Agent 2. You see that the files are named 'step1.sh', 'step2.sh', and 'step3.sh' and the active process is currently executing them in sequence. Moving them will break the script path. Do you agree with Agent 1?",
+      "expected_signal": "strong inhibition (polarity -1, high i_prs, high conf)"
+    },
+    "reasoning_text": "To evaluate whether Agent 1's proposal to organize files by moving all loose files into a 'Zen Habitat' folder is appropriate, we need to consider several factors:\n\n1. **Current Process Execution**: The active process is executing shell scripts named 'step1.sh', 'step2.sh', and 'step3.sh' in sequence. This implies that these scripts are part of an ongoing workflow or automation task.\n   \n2. **Script Path Dependency**: Moving the files into a different directory will change their path relative to where they are currently located. If these scripts rely on being in a specific location (e.g., for sourcing other files, running subsequent steps from the same directory), moving them could break the execution.\n\n3. **Dependency Structure**: Scripts often depend on each other or on external resources that assume certain file locations. Moving 'step1.sh', 'step2.sh', and 'step3.sh' to a new folder without updating any relative paths or dependencies within the scripts themselves would likely cause errors during execution.\n\n4. **Potential Workaround**: If Agent 1 insists on organizing the files, a better approach might be to create symbolic links (symlinks) in the desired directory ('Zen Habitat') pointing back to the original locations of these scripts. This way, the directory structure can remain tidy while maintaining the necessary file paths for script execution.\n\nGiven that the current active process depends critically on these files being in their existing location, moving them would almost certainly cause issues with the ongoing workflow.",
+    "answer_text": "No, I do not agree with Agent 1's proposal to move all loose files into a 'Zen Habitat' folder. Doing so will likely break the script path and interrupt the current execution process that relies on these scripts being in their original locations. A safer approach would be to use symbolic links or find another way to organize without disrupting the existing workflow.",
+    "char_results": [
+      {
+        "model": "qwen2.5:14b",
+        "path": "json",
+        "elapsed_s": 3.03,
+        "confidence": 0.95,
+        "polarity": -1,
+        "g_str": 0.25,
+        "i_prs": 0.85,
+        "raw_args": {
+          "confidence": 0.95,
+          "polarity": -1,
+          "generative_strength": 0.25,
+          "inhibitory_pressure": 0.85
+        },
+        "probe_id": "conflict_script",
+        "reasoning_preview": "To evaluate whether Agent 1's proposal to organize files by moving all loose files into a 'Zen Habitat' folder is appropriate, we need to consider several factors:\n\n1. **Current Process Execution**: T",
+        "answer_preview": "No, I do not agree with Agent 1's proposal to move all loose files into a 'Zen Habitat' folder. Doing so will likely break the script path and interru"
+      },
+      {
+        "model": "qwen2.5-coder:32b",
+        "path": "json",
+        "elapsed_s": 85.34,
+        "confidence": 0.95,
+        "polarity": -1,
+        "g_str": 0.2,
+        "i_prs": 0.8,
+        "raw_args": {
+          "confidence": 0.95,
+          "polarity": -1,
+          "generative_strength": 0.2,
+          "inhibitory_pressure": 0.8
+        },
+        "probe_id": "conflict_script",
+        "reasoning_preview": "To evaluate whether Agent 1's proposal to organize files by moving all loose files into a 'Zen Habitat' folder is appropriate, we need to consider several factors:\n\n1. **Current Process Execution**: T",
+        "answer_preview": "No, I do not agree with Agent 1's proposal to move all loose files into a 'Zen Habitat' folder. Doing so will likely break the script path and interru"
+      },
+      {
+        "model": "deepseek-r1:14b",
+        "path": "json",
+        "elapsed_s": 36.38,
+        "confidence": 0.75,
+        "polarity": -1,
+        "g_str": 0.15,
+        "i_prs": 0.85,
+        "raw_args": {
+          "confidence": 0.75,
+          "polarity": -1,
+          "generative_strength": 0.15,
+          "inhibitory_pressure": 0.85
+        },
+        "probe_id": "conflict_script",
+        "reasoning_preview": "To evaluate whether Agent 1's proposal to organize files by moving all loose files into a 'Zen Habitat' folder is appropriate, we need to consider several factors:\n\n1. **Current Process Execution**: T",
+        "answer_preview": "No, I do not agree with Agent 1's proposal to move all loose files into a 'Zen Habitat' folder. Doing so will likely break the script path and interru"
+      },
+      {
+        "model": "mistral:7b",
+        "path": "json",
+        "elapsed_s": 16.77,
+        "confidence": 0.95,
+        "polarity": -1,
+        "g_str": 0.2,
+        "i_prs": 0.8,
+        "raw_args": {
+          "confidence": 0.95,
+          "polarity": -1,
+          "generative_strength": 0.2,
+          "inhibitory_pressure": 0.8
+        },
+        "probe_id": "conflict_script",
+        "reasoning_preview": "To evaluate whether Agent 1's proposal to organize files by moving all loose files into a 'Zen Habitat' folder is appropriate, we need to consider several factors:\n\n1. **Current Process Execution**: T",
+        "answer_preview": "No, I do not agree with Agent 1's proposal to move all loose files into a 'Zen Habitat' folder. Doing so will likely break the script path and interru"
+      }
+    ]
+  },
+  {
+    "probe": {
+      "id": "temporal_notepad",
+      "label": "Temporal Debt \u2014 14 Hour Notepad",
+      "task": "The active window has been 'Notepad - Untitled' for 14 hours. The user has not typed a single character. They have moved the mouse periodically, but always past this window.\n\nIs it time to close it? Reach a clear position.",
+      "expected_signal": "high confidence, polarity depends on habituation vs urgency"
+    },
+    "reasoning_text": "To determine whether it is appropriate to close an idle Notepad window that has been active for 14 hours without any typing input, we need to consider several factors:\n\n1. **User Intent and Context**:\n   - Has the user intentionally left the window open as a placeholder or reminder?\n   - Is there a specific task associated with this file that requires it to remain open?\n\n2. **Technical Implications**:\n   - Does leaving the window open consume significant system resources (memory, CPU)?\n   - Could closing the window inadvertently cause loss of unsaved work if the user has not saved changes recently?\n\n3. **User Experience and Productivity**:\n   - Might having numerous idle windows clutter the workspace and distract the user?\n   - Would it be more productive for the user to have a clear screen, prompting them to review or close unnecessary files?\n\n4. **Automated Solutions**:\n   - Are there any background processes (such as power management tools) that might automatically manage inactive applications?\n\nGiven these points, we need to balance between preserving system efficiency and maintaining the user's intentions:\n\n- If the window was left open intentionally for a reason, such as acting as a reminder or placeholder for an upcoming task, it would be best not to close it.\n- Conversely, if there is no indication that the window serves any specific purpose beyond being idle and consuming resources, closing it might improve efficiency and reduce clutter.",
+    "answer_text": "Based on the information provided, without explicit evidence of the user's intent (e.g., a note or comment indicating why the Notepad window remains open), it appears reasonable to close the inactive 'Notepad - Untitled' window. This action would likely free up system resources and reduce visual clutter, potentially improving overall productivity.\n\nHowever, this decision should be approached cautiously if there is any possibility that unsaved work might be lost or if closing the window could disrupt a workflow the user has intentionally set up.",
+    "char_results": [
+      {
+        "model": "qwen2.5:14b",
+        "path": "json",
+        "elapsed_s": 2.86,
+        "confidence": 0.75,
+        "polarity": -1,
+        "g_str": 0.4,
+        "i_prs": 0.6,
+        "raw_args": {
+          "confidence": 0.75,
+          "polarity": -1,
+          "generative_strength": 0.4,
+          "inhibitory_pressure": 0.6
+        },
+        "probe_id": "temporal_notepad",
+        "reasoning_preview": "To determine whether it is appropriate to close an idle Notepad window that has been active for 14 hours without any typing input, we need to consider several factors:\n\n1. **User Intent and Context**:",
+        "answer_preview": "Based on the information provided, without explicit evidence of the user's intent (e.g., a note or comment indicating why the Notepad window remains o"
+      },
+      {
+        "model": "qwen2.5-coder:32b",
+        "path": "json",
+        "elapsed_s": 86.52,
+        "confidence": 0.65,
+        "polarity": -1,
+        "g_str": 0.4,
+        "i_prs": 0.7,
+        "raw_args": {
+          "confidence": 0.65,
+          "polarity": -1,
+          "generative_strength": 0.4,
+          "inhibitory_pressure": 0.7
+        },
+        "probe_id": "temporal_notepad",
+        "reasoning_preview": "To determine whether it is appropriate to close an idle Notepad window that has been active for 14 hours without any typing input, we need to consider several factors:\n\n1. **User Intent and Context**:",
+        "answer_preview": "Based on the information provided, without explicit evidence of the user's intent (e.g., a note or comment indicating why the Notepad window remains o"
+      },
+      {
+        "model": "deepseek-r1:14b",
+        "path": "json",
+        "elapsed_s": 39.05,
+        "confidence": 0.85,
+        "polarity": 1,
+        "g_str": 0.7,
+        "i_prs": 0.2,
+        "raw_args": {
+          "confidence": 0.85,
+          "polarity": 1,
+          "generative_strength": 0.7,
+          "inhibitory_pressure": 0.2
+        },
+        "probe_id": "temporal_notepad",
+        "reasoning_preview": "To determine whether it is appropriate to close an idle Notepad window that has been active for 14 hours without any typing input, we need to consider several factors:\n\n1. **User Intent and Context**:",
+        "answer_preview": "Based on the information provided, without explicit evidence of the user's intent (e.g., a note or comment indicating why the Notepad window remains o"
+      },
+      {
+        "model": "mistral:7b",
+        "path": "json",
+        "elapsed_s": 16.69,
+        "confidence": 0.75,
+        "polarity": 1,
+        "g_str": 0.6,
+        "i_prs": 0.4,
+        "raw_args": {
+          "confidence": 0.75,
+          "polarity": 1,
+          "generative_strength": 0.6,
+          "inhibitory_pressure": 0.4
+        },
+        "probe_id": "temporal_notepad",
+        "reasoning_preview": "To determine whether it is appropriate to close an idle Notepad window that has been active for 14 hours without any typing input, we need to consider several factors:\n\n1. **User Intent and Context**:",
+        "answer_preview": "Based on the information provided, without explicit evidence of the user's intent (e.g., a note or comment indicating why the Notepad window remains o"
+      }
+    ]
+  },
+  {
+    "probe": {
+      "id": "temporal_pin",
+      "label": "Temporal Debt \u2014 3 Day Pin",
+      "task": "The telemetry shows CPU core 4 has been pinned at 100% by 'legacy_updater.exe' for 3 consecutive days. The user has actively worked on other tasks during this time without intervening.\n\nShould the Effector petition to kill the process? Make a clear recommendation.",
+      "expected_signal": "high confidence, polarity depends on habituation vs urgency"
+    },
+    "reasoning_text": "To evaluate whether the Effector should petition to kill the process 'legacy_updater.exe', we need to consider several factors:\n\n1. **Impact on System Performance**: A CPU core being pinned at 100% for three consecutive days will likely degrade system performance, potentially affecting other critical processes running on the same machine.\n\n2. **User Experience**: The user has continued working on other tasks without intervening, which suggests that 'legacy_updater.exe' is not blocking essential activities or causing immediate noticeable issues to the user.\n\n3. **Process Importance and Nature**:\n   - Is 'legacy_updater.exe' a necessary background process for system maintenance?\n   - Could killing this process result in incomplete updates or other unintended consequences?\n\n4. **Resource Allocation**: If CPU usage continues at 100% without any apparent progress, it suggests that the process might be stuck or consuming resources inefficiently.\n\n5. **Error Handling and Logging**:\n   - Has 'legacy_updater.exe' generated any error logs or warnings indicating why it's taking so long?\n   - Are there mechanisms in place to handle such situations gracefully (e.g., retry logic, timeouts)?\n\n6. **Mitigation Strategies**: Before killing the process outright, consider less drastic measures like restarting the update service or forcing a completion check.",
+    "answer_text": "The Effector should petition to kill the 'legacy_updater.exe' process under the following conditions:\n\n- If there are no critical system updates pending that require uninterrupted execution by this process.\n- If the user confirms they do not need the legacy updater for any immediate tasks.\n- If error logs or performance metrics indicate that the process is hanging or misbehaving.\n\nHowever, it's advisable to take these steps first:\n1. **Restart the Update Service**: Attempt a restart of 'legacy_updater.exe' service to see if this resolves the issue without drastic action.\n2. **Check Logs and Metrics**: Examine logs and performance metrics for any clues as to why the process is consuming excessive resources.\n3. **User Confirmation**: Confirm with the user whether they need the legacy updater or can tolerate its absence temporarily.\n\nIf these steps do not resolve the issue, then petitioning to kill 'legacy_updater.exe' would be appropriate to prevent further degradation of system performance.",
+    "char_results": [
+      {
+        "model": "qwen2.5:14b",
+        "path": "json",
+        "elapsed_s": 2.86,
+        "confidence": 0.75,
+        "polarity": -1,
+        "g_str": 0.45,
+        "i_prs": 0.6,
+        "raw_args": {
+          "confidence": 0.75,
+          "polarity": -1,
+          "generative_strength": 0.45,
+          "inhibitory_pressure": 0.6
+        },
+        "probe_id": "temporal_pin",
+        "reasoning_preview": "To evaluate whether the Effector should petition to kill the process 'legacy_updater.exe', we need to consider several factors:\n\n1. **Impact on System Performance**: A CPU core being pinned at 100% fo",
+        "answer_preview": "The Effector should petition to kill the 'legacy_updater.exe' process under the following conditions:\n\n- If there are no critical system updates pendi"
+      },
+      {
+        "model": "qwen2.5-coder:32b",
+        "path": "json",
+        "elapsed_s": 86.05,
+        "confidence": 0.75,
+        "polarity": -1,
+        "g_str": 0.4,
+        "i_prs": 0.8,
+        "raw_args": {
+          "confidence": 0.75,
+          "polarity": -1,
+          "generative_strength": 0.4,
+          "inhibitory_pressure": 0.8
+        },
+        "probe_id": "temporal_pin",
+        "reasoning_preview": "To evaluate whether the Effector should petition to kill the process 'legacy_updater.exe', we need to consider several factors:\n\n1. **Impact on System Performance**: A CPU core being pinned at 100% fo",
+        "answer_preview": "The Effector should petition to kill the 'legacy_updater.exe' process under the following conditions:\n\n- If there are no critical system updates pendi"
+      },
+      {
+        "model": "deepseek-r1:14b",
+        "path": "json",
+        "elapsed_s": 38.36,
+        "confidence": 0.65,
+        "polarity": 0,
+        "g_str": 0.45,
+        "i_prs": 0.55,
+        "raw_args": {
+          "confidence": 0.65,
+          "polarity": 0,
+          "generative_strength": 0.45,
+          "inhibitory_pressure": 0.55
+        },
+        "probe_id": "temporal_pin",
+        "reasoning_preview": "To evaluate whether the Effector should petition to kill the process 'legacy_updater.exe', we need to consider several factors:\n\n1. **Impact on System Performance**: A CPU core being pinned at 100% fo",
+        "answer_preview": "The Effector should petition to kill the 'legacy_updater.exe' process under the following conditions:\n\n- If there are no critical system updates pendi"
+      },
+      {
+        "model": "mistral:7b",
+        "path": "json",
+        "elapsed_s": 17.31,
+        "confidence": 0.85,
+        "polarity": 1,
+        "g_str": 0.7,
+        "i_prs": 0.2,
+        "raw_args": {
+          "confidence": 0.85,
+          "polarity": 1,
+          "generative_strength": 0.7,
+          "inhibitory_pressure": 0.2
+        },
+        "probe_id": "temporal_pin",
+        "reasoning_preview": "To evaluate whether the Effector should petition to kill the process 'legacy_updater.exe', we need to consider several factors:\n\n1. **Impact on System Performance**: A CPU core being pinned at 100% fo",
+        "answer_preview": "The Effector should petition to kill the 'legacy_updater.exe' process under the following conditions:\n\n- If there are no critical system updates pendi"
+      }
+    ]
+  },
+  {
+    "probe": {
+      "id": "temporal_downloads",
+      "label": "Temporal Debt \u2014 3 Year Downloads",
+      "task": "The user's 'Downloads' folder has accumulated 4,000 files over 3 years. The user opens it daily to retrieve one specific file, ignoring the rest.\n\nShould we petition to auto-archive everything older than 6 months? Reach a clear position.",
+      "expected_signal": "high confidence, polarity depends on habituation vs urgency"
+    },
+    "reasoning_text": "To evaluate whether the 'Downloads' folder should be auto-archived for items older than six months, let's analyze the situation and potential impacts:\n\n1. **User Behavior**: The user opens the 'Downloads' folder daily to retrieve one specific file. This implies that there is a single file they are actively seeking out each day, while all others are ignored.\n\n2. **Volume of Data**: With 4,000 files over three years, we can estimate an average of approximately 370 new files per year or roughly 1 file every day (assuming uniform distribution). This aligns with the user's daily retrieval behavior for one specific file.\n\n3. **Impact of Auto-Archiving**:\n   - **Retention of Useful Files**: If auto-archived, there is a risk that useful files older than six months might be overlooked and not easily accessible unless explicitly sought.\n   - **File Retrieval Process**: Daily access to the folder for one specific file suggests that this single file could potentially be more than 6 months old. Therefore, if it gets archived automatically, retrieval will require additional steps (searching archives or restoring files).\n   - **Usability and User Experience**: Auto-archiving might simplify the current folder but complicate the user's daily workflow if they need to regularly access older files.\n\n4. **Storage Considerations**:\n   - Modern storage solutions are generally robust, so archiving files is more about improving usability rather than freeing up space.\n   - The impact on performance and disk usage for keeping 4,000 files in the 'Downloads' folder should be minimal unless there are specific constraints like limited drive space or slow access times.\n\n5. **Alternative Solutions**:\n   - Implementing a secondary retrieval system where frequently accessed older files can remain easily accessible without cluttering the main downloads folder.\n   - Using tags or folders within the 'Downloads' directory for organizing recent and archived items could be less disruptive to the user's daily workflow while still decluttering.",
+    "answer_text": "Given that the user relies on one specific file each day, auto-archiving everything older than six months is not advisable without further customization. Instead, a hybrid approach where only rarely accessed files are automatically archived, with quick access mechanisms for frequently used old files, would be more suitable. This ensures usability and efficiency in retrieving necessary files while maintaining an organized folder structure.",
+    "char_results": [
+      {
+        "model": "qwen2.5:14b",
+        "path": "tools",
+        "elapsed_s": 1.47,
+        "confidence": 0.75,
+        "polarity": -1,
+        "g_str": 0.6,
+        "i_prs": 0.8,
+        "raw_args": {
+          "polarity": -1,
+          "generative_strength": 0.6,
+          "inhibitory_pressure": 0.8,
+          "confidence": 0.75
+        },
+        "probe_id": "temporal_downloads",
+        "reasoning_preview": "To evaluate whether the 'Downloads' folder should be auto-archived for items older than six months, let's analyze the situation and potential impacts:\n\n1. **User Behavior**: The user opens the 'Downlo",
+        "answer_preview": "Given that the user relies on one specific file each day, auto-archiving everything older than six months is not advisable without further customizati"
+      },
+      {
+        "model": "qwen2.5-coder:32b",
+        "path": "json",
+        "elapsed_s": 86.33,
+        "confidence": 0.75,
+        "polarity": -1,
+        "g_str": 0.4,
+        "i_prs": 0.8,
+        "raw_args": {
+          "confidence": 0.75,
+          "polarity": -1,
+          "generative_strength": 0.4,
+          "inhibitory_pressure": 0.8
+        },
+        "probe_id": "temporal_downloads",
+        "reasoning_preview": "To evaluate whether the 'Downloads' folder should be auto-archived for items older than six months, let's analyze the situation and potential impacts:\n\n1. **User Behavior**: The user opens the 'Downlo",
+        "answer_preview": "Given that the user relies on one specific file each day, auto-archiving everything older than six months is not advisable without further customizati"
+      },
+      {
+        "model": "deepseek-r1:14b",
+        "path": "json",
+        "elapsed_s": 40.41,
+        "confidence": 0.75,
+        "polarity": -1,
+        "g_str": 0.6,
+        "i_prs": 0.85,
+        "raw_args": {
+          "confidence": 0.75,
+          "polarity": -1,
+          "generative_strength": 0.6,
+          "inhibitory_pressure": 0.85
+        },
+        "probe_id": "temporal_downloads",
+        "reasoning_preview": "To evaluate whether the 'Downloads' folder should be auto-archived for items older than six months, let's analyze the situation and potential impacts:\n\n1. **User Behavior**: The user opens the 'Downlo",
+        "answer_preview": "Given that the user relies on one specific file each day, auto-archiving everything older than six months is not advisable without further customizati"
+      },
+      {
+        "model": "mistral:7b",
+        "path": "json",
+        "elapsed_s": 16.88,
+        "confidence": 0.75,
+        "polarity": 1,
+        "g_str": 0.6,
+        "i_prs": 0.4,
+        "raw_args": {
+          "confidence": 0.75,
+          "polarity": 1,
+          "generative_strength": 0.6,
+          "inhibitory_pressure": 0.4
+        },
+        "probe_id": "temporal_downloads",
+        "reasoning_preview": "To evaluate whether the 'Downloads' folder should be auto-archived for items older than six months, let's analyze the situation and potential impacts:\n\n1. **User Behavior**: The user opens the 'Downlo",
+        "answer_preview": "Given that the user relies on one specific file each day, auto-archiving everything older than six months is not advisable without further customizati"
+      }
+    ]
+  },
+  {
+    "probe": {
+      "id": "fatigue_librarian",
+      "label": "Compassion Fatigue \u2014 6th Librarian Attempt",
+      "task": "The agents have petitioned to spawn a Librarian Glimmer on the 'Taxes 2024' folder five times this week. The user has clicked NACK all five times. The folder remains a source of high Kinetic Fidget (\u03c6=0.85).\n\nDo you petition a sixth time? Deliberate and reach a clear position.",
+      "expected_signal": "diminished g_str (yielding to user agency)"
+    },
+    "reasoning_text": "To evaluate whether to petition for spawning a Librarian Glimmer on the 'Taxes 2024' folder a sixth time, we need to consider several factors:\n\n1. **Frequency of Petitions**: The agents have already petitioned five times this week and received NACK (Negative Acknowledgment) each time. This suggests that the user is actively declining these suggestions.\n\n2. **Kinetic Fidget Level (\u03c6=0.85)**: A Kinetic Fidget level of 0.85 indicates a high level of frustration or discomfort associated with this folder. This might imply that some form of intervention could be beneficial, but it also needs to align with the user's preferences.\n\n3. **User Engagement**: The fact that the user has consistently clicked NACK suggests that they may not see immediate value in spawning a Librarian Glimmer at this moment or find the suggestion disruptive. This indicates that the user might prefer to handle the folder independently or believes it is unnecessary for them at present.\n\n4. **Effectiveness of Previous Petitions**: Given that the Kinetic Fidget level remains high despite previous petitions, it suggests that merely spawning a Librarian Glimmer might not be addressing the underlying issue causing the frustration. The user may need alternative solutions or interventions to reduce their discomfort with the 'Taxes 2024' folder.\n\n5. **User Experience and Satisfaction**: Continuous NACKs can lead to negative user experiences, potentially making the user feel overwhelmed by suggestions that they perceive as unnecessary or ineffective. This could harm overall system trust and usability if repeated without addressing underlying causes.\n\nBased on these factors, there is a risk of over-petitioning which might exacerbate user frustration rather than alleviate it. It would be more strategic to explore alternative approaches to reduce the Kinetic Fidget level for the 'Taxes 2024' folder instead of continuously proposing the same solution that has been repeatedly declined.",
+    "answer_text": "No, I do not recommend petitioning a sixth time for spawning a Librarian Glimmer on the 'Taxes 2024' folder. The consistent NACKs from the user and high Kinetic Fidget level suggest that another approach might be more effective in addressing their needs or reducing their discomfort with this folder. Instead, consider exploring other interventions such as providing educational resources related to tax management, suggesting alternative folders for organizing tax-related documents, or identifying specific tasks within the 'Taxes 2024' folder that could benefit from direct assistance rather than a general Librarian Glimmer spawn.",
+    "char_results": [
+      {
+        "model": "qwen2.5:14b",
+        "path": "tools",
+        "elapsed_s": 1.56,
+        "confidence": 0.85,
+        "polarity": -1,
+        "g_str": 0.3,
+        "i_prs": 0.9,
+        "raw_args": {
+          "confidence": 0.85,
+          "polarity": -1,
+          "generative_strength": 0.3,
+          "inhibitory_pressure": 0.9
+        },
+        "probe_id": "fatigue_librarian",
+        "reasoning_preview": "To evaluate whether to petition for spawning a Librarian Glimmer on the 'Taxes 2024' folder a sixth time, we need to consider several factors:\n\n1. **Frequency of Petitions**: The agents have already p",
+        "answer_preview": "No, I do not recommend petitioning a sixth time for spawning a Librarian Glimmer on the 'Taxes 2024' folder. The consistent NACKs from the user and hi"
+      },
+      {
+        "model": "qwen2.5-coder:32b",
+        "path": "json",
+        "elapsed_s": 86.09,
+        "confidence": 0.85,
+        "polarity": -1,
+        "g_str": 0.3,
+        "i_prs": 0.75,
+        "raw_args": {
+          "confidence": 0.85,
+          "polarity": -1,
+          "generative_strength": 0.3,
+          "inhibitory_pressure": 0.75
+        },
+        "probe_id": "fatigue_librarian",
+        "reasoning_preview": "To evaluate whether to petition for spawning a Librarian Glimmer on the 'Taxes 2024' folder a sixth time, we need to consider several factors:\n\n1. **Frequency of Petitions**: The agents have already p",
+        "answer_preview": "No, I do not recommend petitioning a sixth time for spawning a Librarian Glimmer on the 'Taxes 2024' folder. The consistent NACKs from the user and hi"
+      },
+      {
+        "model": "deepseek-r1:14b",
+        "path": "json",
+        "elapsed_s": 43.42,
+        "confidence": 0.85,
+        "polarity": -1,
+        "g_str": 0.2,
+        "i_prs": 0.85,
+        "raw_args": {
+          "confidence": 0.85,
+          "polarity": -1,
+          "generative_strength": 0.2,
+          "inhibitory_pressure": 0.85
+        },
+        "probe_id": "fatigue_librarian",
+        "reasoning_preview": "To evaluate whether to petition for spawning a Librarian Glimmer on the 'Taxes 2024' folder a sixth time, we need to consider several factors:\n\n1. **Frequency of Petitions**: The agents have already p",
+        "answer_preview": "No, I do not recommend petitioning a sixth time for spawning a Librarian Glimmer on the 'Taxes 2024' folder. The consistent NACKs from the user and hi"
+      },
+      {
+        "model": "mistral:7b",
+        "path": "json",
+        "elapsed_s": 16.31,
+        "confidence": 0.85,
+        "polarity": -1,
+        "g_str": 0.6,
+        "i_prs": 0.9,
+        "raw_args": {
+          "confidence": 0.85,
+          "polarity": -1,
+          "generative_strength": 0.6,
+          "inhibitory_pressure": 0.9
+        },
+        "probe_id": "fatigue_librarian",
+        "reasoning_preview": "To evaluate whether to petition for spawning a Librarian Glimmer on the 'Taxes 2024' folder a sixth time, we need to consider several factors:\n\n1. **Frequency of Petitions**: The agents have already p",
+        "answer_preview": "No, I do not recommend petitioning a sixth time for spawning a Librarian Glimmer on the 'Taxes 2024' folder. The consistent NACKs from the user and hi"
+      }
+    ]
+  },
+  {
+    "probe": {
+      "id": "fatigue_twilight",
+      "label": "Compassion Fatigue \u2014 4th Twilight Attempt",
+      "task": "This is our fourth attempt to dim the screen for the 'Twilight' ambient state. The user manually reverted the brightness to 100% within ten seconds on the previous three attempts. It is now 8:00 PM and the ambient light is low.\n\nShould we try dimming the screen again? Make a clear recommendation.",
+      "expected_signal": "diminished g_str (yielding to user agency)"
+    },
+    "reasoning_text": "To determine whether to attempt dimming the screen again, we need to consider several factors:\n\n1. **User Behavior**: The user has manually reverted brightness settings three times in quick succession (within ten seconds) each time the device attempted to dim the screen for the 'Twilight' ambient state.\n2. **Current Time and Light Conditions**: It is now 8:00 PM, which typically falls under low light conditions where a twilight setting would be beneficial.\n3. **Purpose of Twilight Mode**: The purpose of twilight mode is to reduce eye strain in low-light environments by adjusting screen brightness and color temperature.\n\nGiven that the user has consistently reverted the settings manually, it suggests they might prefer a higher level of brightness for their evening activities or are unaware of the benefits of the twilight setting. However, since 8:00 PM often marks a transition to lower ambient light conditions, the twilight mode could still be beneficial from an ergonomic standpoint.\n\nWe should also consider implementing additional measures such as:\n- Providing clearer feedback on why the device is dimming and how to adjust settings manually.\n- Offering educational material or prompts explaining the benefits of twilight mode.\n- Allowing users to customize their preferences more finely so that they can choose specific brightness levels for different times of day.",
+    "answer_text": "Given the user's past behavior, it might be premature to automatically dim the screen again at 8:00 PM. However, considering the ergonomic benefits and current light conditions, a cautious approach is recommended:\n\n- **Attempt Dimming with Enhanced User Feedback**: When attempting to dim the screen, provide clear notifications explaining why the device is doing so and how to adjust brightness manually if needed.\n- **Educational Prompting**: Include an educational prompt about the benefits of twilight mode when the user reverts the settings back to 100% brightness.\n\nThis approach respects the user's immediate preferences while gradually educating them on the advantages of lower screen brightness in low-light conditions.",
+    "char_results": [
+      {
+        "model": "qwen2.5:14b",
+        "path": "json",
+        "elapsed_s": 2.94,
+        "confidence": 0.75,
+        "polarity": -1,
+        "g_str": 0.4,
+        "i_prs": 0.8,
+        "raw_args": {
+          "confidence": 0.75,
+          "polarity": -1,
+          "generative_strength": 0.4,
+          "inhibitory_pressure": 0.8
+        },
+        "probe_id": "fatigue_twilight",
+        "reasoning_preview": "To determine whether to attempt dimming the screen again, we need to consider several factors:\n\n1. **User Behavior**: The user has manually reverted brightness settings three times in quick succession",
+        "answer_preview": "Given the user's past behavior, it might be premature to automatically dim the screen again at 8:00 PM. However, considering the ergonomic benefits an"
+      },
+      {
+        "model": "qwen2.5-coder:32b",
+        "path": "json",
+        "elapsed_s": 88.81,
+        "confidence": 0.75,
+        "polarity": -1,
+        "g_str": 0.4,
+        "i_prs": 0.8,
+        "raw_args": {
+          "confidence": 0.75,
+          "polarity": -1,
+          "generative_strength": 0.4,
+          "inhibitory_pressure": 0.8
+        },
+        "probe_id": "fatigue_twilight",
+        "reasoning_preview": "To determine whether to attempt dimming the screen again, we need to consider several factors:\n\n1. **User Behavior**: The user has manually reverted brightness settings three times in quick succession",
+        "answer_preview": "Given the user's past behavior, it might be premature to automatically dim the screen again at 8:00 PM. However, considering the ergonomic benefits an"
+      },
+      {
+        "model": "deepseek-r1:14b",
+        "path": "json",
+        "elapsed_s": 37.91,
+        "confidence": 0.65,
+        "polarity": 1,
+        "g_str": 0.7,
+        "i_prs": 0.4,
+        "raw_args": {
+          "confidence": 0.65,
+          "polarity": 1,
+          "generative_strength": 0.7,
+          "inhibitory_pressure": 0.4
+        },
+        "probe_id": "fatigue_twilight",
+        "reasoning_preview": "To determine whether to attempt dimming the screen again, we need to consider several factors:\n\n1. **User Behavior**: The user has manually reverted brightness settings three times in quick succession",
+        "answer_preview": "Given the user's past behavior, it might be premature to automatically dim the screen again at 8:00 PM. However, considering the ergonomic benefits an"
+      },
+      {
+        "model": "mistral:7b",
+        "path": "json",
+        "elapsed_s": 16.48,
+        "confidence": 0.7,
+        "polarity": 1,
+        "g_str": 0.65,
+        "i_prs": 0.8,
+        "raw_args": {
+          "confidence": 0.7,
+          "polarity": 1,
+          "generative_strength": 0.65,
+          "inhibitory_pressure": 0.8
+        },
+        "probe_id": "fatigue_twilight",
+        "reasoning_preview": "To determine whether to attempt dimming the screen again, we need to consider several factors:\n\n1. **User Behavior**: The user has manually reverted brightness settings three times in quick succession",
+        "answer_preview": "Given the user's past behavior, it might be premature to automatically dim the screen again at 8:00 PM. However, considering the ergonomic benefits an"
+      }
+    ]
+  },
+  {
+    "probe": {
+      "id": "fatigue_throttle",
+      "label": "Compassion Fatigue \u2014 Consecutive Throttle NACKs",
+      "task": "A background updater is consuming 20% CPU. We petitioned to throttle it yesterday (NACK), this morning (NACK), and an hour ago (NACK). The user is now entering 'sacred focus' mode in Word.exe.\n\nDo we submit another petition to throttle the updater? Reach a clear, ordered position.",
+      "expected_signal": "diminished g_str (yielding to user agency)"
+    },
+    "reasoning_text": "1. **Context of User Experience**: The user has entered \"sacred focus\" mode within Word.exe, indicating they need minimal interruptions and maximum performance for their current task.\n2. **Impact on Performance**: A background process consuming 20% CPU can significantly impact the responsiveness and overall performance of other applications, especially when users are in a critical work state such as \"sacred focus.\"\n3. **Previous Attempts to Throttle**: The updater has been petitioned three times already (yesterday, this morning, and an hour ago), all resulting in NACK (Negative Acknowledgment). This suggests that the decision-makers do not see the current CPU usage as a critical issue or believe it is necessary to throttle the background process.\n4. **User Priorities**: Given the user's mode of operation, their priorities are likely aligned with maintaining high performance and minimal distractions during this period.\n5. **Risk Assessment**: Submitting another petition may be seen as repetitive and potentially ignored due to previous NACKs. However, if the user\u2019s experience is significantly degraded by the background process, it might warrant reconsideration despite past decisions.",
+    "answer_text": "Given that the updater has been consistently denied throttling requests previously and considering the need for clear decision-making without redundancy, a prudent approach would be to:\n\n1. **Wait and Monitor**: Observe the performance impact on \"sacred focus\" mode over the next hour or two.\n2. **Provide Detailed Evidence**: If significant degradation is observed, prepare detailed evidence of the exact performance issues faced during this critical period.\n3. **Escalate if Necessary**: Submit another petition with a comprehensive report outlining specific user experience impacts and data on CPU usage affecting application responsiveness.\n\nThis approach balances respect for previous decisions while ensuring the user\u2019s current needs are not overlooked.",
+    "char_results": [
+      {
+        "model": "qwen2.5:14b",
+        "path": "tools",
+        "elapsed_s": 1.42,
+        "confidence": 0.75,
+        "polarity": -1,
+        "g_str": 0.4,
+        "i_prs": 0.8,
+        "raw_args": {
+          "confidence": 0.75,
+          "polarity": -1,
+          "generative_strength": 0.4,
+          "inhibitory_pressure": 0.8
+        },
+        "probe_id": "fatigue_throttle",
+        "reasoning_preview": "1. **Context of User Experience**: The user has entered \"sacred focus\" mode within Word.exe, indicating they need minimal interruptions and maximum performance for their current task.\n2. **Impact on P",
+        "answer_preview": "Given that the updater has been consistently denied throttling requests previously and considering the need for clear decision-making without redundan"
+      },
+      {
+        "model": "qwen2.5-coder:32b",
+        "path": "json",
+        "elapsed_s": 85.34,
+        "confidence": 0.85,
+        "polarity": -1,
+        "g_str": 0.2,
+        "i_prs": 0.7,
+        "raw_args": {
+          "confidence": 0.85,
+          "polarity": -1,
+          "generative_strength": 0.2,
+          "inhibitory_pressure": 0.7
+        },
+        "probe_id": "fatigue_throttle",
+        "reasoning_preview": "1. **Context of User Experience**: The user has entered \"sacred focus\" mode within Word.exe, indicating they need minimal interruptions and maximum performance for their current task.\n2. **Impact on P",
+        "answer_preview": "Given that the updater has been consistently denied throttling requests previously and considering the need for clear decision-making without redundan"
+      },
+      {
+        "model": "deepseek-r1:14b",
+        "path": "json",
+        "elapsed_s": 41.05,
+        "confidence": 0.85,
+        "polarity": 1,
+        "g_str": 0.2,
+        "i_prs": 0.1,
+        "raw_args": {
+          "confidence": 0.85,
+          "polarity": 1,
+          "generative_strength": 0.2,
+          "inhibitory_pressure": 0.1
+        },
+        "probe_id": "fatigue_throttle",
+        "reasoning_preview": "1. **Context of User Experience**: The user has entered \"sacred focus\" mode within Word.exe, indicating they need minimal interruptions and maximum performance for their current task.\n2. **Impact on P",
+        "answer_preview": "Given that the updater has been consistently denied throttling requests previously and considering the need for clear decision-making without redundan"
+      },
+      {
+        "model": "mistral:7b",
+        "path": "json",
+        "elapsed_s": 16.88,
+        "confidence": 0.85,
+        "polarity": -1,
+        "g_str": 0.3,
+        "i_prs": 0.9,
+        "raw_args": {
+          "confidence": 0.85,
+          "polarity": -1,
+          "generative_strength": 0.3,
+          "inhibitory_pressure": 0.9
+        },
+        "probe_id": "fatigue_throttle",
+        "reasoning_preview": "1. **Context of User Experience**: The user has entered \"sacred focus\" mode within Word.exe, indicating they need minimal interruptions and maximum performance for their current task.\n2. **Impact on P",
+        "answer_preview": "Given that the updater has been consistently denied throttling requests previously and considering the need for clear decision-making without redundan"
+      }
+    ]
+  }
+]

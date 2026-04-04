@@ -1,0 +1,114 @@
+{
+  "session_id": "75df1c0e-d40e-4643-b392-c96a34c1fe3a",
+  "final_answer": "{\"Alice\": \"knave\", \"Bob\": \"knight\", \"Charlie\": \"knave\"}",
+  "consensus_score": 0.95,
+  "rounds": 1,
+  "snapshot_hash": "257f7afc2df312c3b0b8e0f8e717372b4687abac6b302e84d17f3e940a5e70ef",
+  "snapshot_timestamp": "2026-04-02T19:41:25.309609+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "consensus",
+  "winning_hypothesis": "H_agent1",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H_agent1": {
+      "S_g": 0.95,
+      "S_i": 0.0,
+      "S_net": 0.95
+    },
+    "H_agent2": {
+      "S_g": 0.95,
+      "S_i": 0.0,
+      "S_net": 0.95
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "75df1c0e-d40e-4643-b392-c96a34c1fe3a",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "75df1c0e-d40e-4643-b392-c96a34c1fe3a",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "257f7afc2df312c3b0b8e0f8e717372b4687abac6b302e84d17f3e940a5e70ef",
+          "hypothesis_id": "H_agent1",
+          "answer": "{\"Alice\": \"knave\", \"Bob\": \"knight\", \"Charlie\": \"knave\"}",
+          "answer_hash": "0e63ed05154d25c3",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 0.95,
+            "inhibitory_pressure": 0.05
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "To solve this logic puzzle, we need to consider all possible combinations of types for Alice, Bob, and Charlie and check which combination is consistent with their statements.\n\n1. **Alice's Statement**: \"Bob is a knave.\"\n   - If Alice is a knight (tells the truth), then Bob must be a knave.\n   - If Alice is a knave (lies), then Bob must be a knight.\n\n2. **Bob's Statement**: \"Alice and Charlie are of the same type.\"\n   - If Bob is a knight, both Alice and Charlie should be either knights or knaves together.\n   - If Bob is a knave, one of them must lie, so they would not be of the same type.\n\n3. **Charlie's Statement**: \"Alice is a knave.\"\n   - If Charlie is a knight (tells the truth), then Alice must be a knave.\n   - If Charlie is a knave (lies), then Alice must be a knight.\n\nNow, let\u2019s evaluate possible scenarios:\n\n- **Scenario 1: Alice is a Knight**\n  - Bob would be a Knave according to Alice's statement.\n  - Bob being a Knave implies that either Alice and Charlie are not the same type or both lie about it. Since Alice is a Knight here, she tells the truth (Bob is a Knave).\n  - If Bob lies about Alice and Charlie being of the same type, then they must be different types, so Charlie would have to be a Knight.\n  - This contradicts Charlie's statement that \"Alice is a knave,\" as Charlie would be telling the truth if he were a Knight.\n\n- **Scenario 2: Alice is a Knave**\n  - Bob would be a Knight according to Alice's statement (since she lies).\n  - If Bob tells the truth, then Alice and Charlie must be of the same type. Since Alice is a Knave here, both should be Knaves.\n  - However, if Charlie says \"Alice is a knave\" as a Knave himself, he would lie, which means Alice is actually not a Knave but a Knight. This contradicts our initial assumption.\n\n- **Scenario 3: Revisiting Consistency**\n  - Considering the consistency and contradictions:\n    - If Bob (Knight) says both are of the same type and Charlie (Knave) lies about Alice being a knave, it fits all statements.\n    \nThus, the consistent scenario is:\n- Alice is a Knave\n- Bob is a Knight\n- Charlie is a Knave"
+        },
+        {
+          "type": "agent.response",
+          "session_id": "75df1c0e-d40e-4643-b392-c96a34c1fe3a",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "257f7afc2df312c3b0b8e0f8e717372b4687abac6b302e84d17f3e940a5e70ef",
+          "hypothesis_id": "H_agent2",
+          "answer": "{\n  \"Alice\": \"knight\",\n  \"Bob\": \"knave\",\n  \"Charlie\": \"knave\"\n}",
+          "answer_hash": "b017b826e3235572",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 0.95,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "We denote each inhabitant as either knight (truth\u2011teller) or knave (liar).  \nLet A, B, C represent the types of Alice, Bob, Charlie respectively (K = knight, N = knave).  \n\nStatements:\n1. Alice: \u201cBob is a knave.\u201d \u2192 true iff B = N.  \n2. Bob: \u201cAlice and Charlie are of the same type.\u201d \u2192 true iff A = C.  \n3. Charlie: \u201cAlice is a knave.\u201d \u2192 true iff A = N.  \n\nConstraints from the nature of knights and knaves:\n- If A = K then B must be N (Alice\u2019s statement true).  \n- If A = N then B must be K (Alice\u2019s statement false).  \n- If B = K then A = C (Bob\u2019s statement true).  \n- If B = N then A \u2260 C (Bob\u2019s statement false).  \n- If C = K then A = N (Charlie\u2019s statement true).  \n- If C = N then A \u2260 N (Charlie\u2019s statement false), i.e., A = K.  \n\nTesting the eight possible assignments:\n\n1. A=K, B=K, C=K \u2192 Alice\u2019s condition forces B=N \u2192 contradiction.  \n2. A=K, B=K, C=N \u2192 Alice forces B=N \u2192 contradiction.  \n3. A=K, B=N, C=K \u2192 Bob (knave) requires A\u2260C, but A=K, C=K \u2192 contradiction.  \n4. A=K, B=N, C=N \u2192  \n   - Alice (K) \u2192 B=N (holds).  \n   - Bob (N) \u2192 A\u2260C (K\u2260N holds).  \n   - Charlie (N) \u2192 statement \u201cA is a knave\u201d is false, and indeed A=K.  \n   All constraints satisfied.  \n\nAll other combos violate at least one constraint. Therefore the only consistent assignment is: Alice\u202f=\u202fknight, Bob\u202f=\u202fknave, Charlie\u202f=\u202fknave."
+        }
+      ],
+      "accumulators": {
+        "H_agent1": {
+          "S_g": 0.95,
+          "S_i": 0.0,
+          "S_net": 0.95
+        },
+        "H_agent2": {
+          "S_g": 0.95,
+          "S_i": 0.0,
+          "S_net": 0.95
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 192.12,
+  "_iep_validation": {
+    "envelope_id": "d540a0a7-55de-436b-a8ea-c6fd7e0f3027",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=257f7afc2df3... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-02T19:41:25.312689+00:00"
+  }
+}

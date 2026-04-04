@@ -1,0 +1,31 @@
+{
+  "_path": "reflex",
+  "_elapsed_ms": 203.0,
+  "status": "EXECUTED",
+  "rat_id": "27a22003-6283-4517-8464-91ef1c45fb96",
+  "matched_action": {
+    "verb": "WRITE",
+    "target": "world_state",
+    "max_executions": -1,
+    "parameter_constraints": {}
+  },
+  "executions_remaining": -1,
+  "actual_delta": {},
+  "executed_at": "2026-04-02T23:31:06.636126+00:00",
+  "_elapsed_s": 0.2,
+  "_iep_validation": {
+    "envelope_id": "7db9ff00-412a-414a-8680-525cb42ace5c",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=20f0d76cb910... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-02T23:31:06.638129+00:00"
+  }
+}

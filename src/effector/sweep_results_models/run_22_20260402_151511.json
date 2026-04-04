@@ -1,0 +1,114 @@
+{
+  "session_id": "2b61bc39-fbdb-46e5-b86a-2372dc6136d9",
+  "final_answer": "{\"Alice\":\"knight\",\"Bob\":\"knave\",\"Charlie\":\"knave\"}",
+  "consensus_score": 0.9,
+  "rounds": 1,
+  "snapshot_hash": "577878183e4ea963e3a7fef04717ae0c87eff93367aba3502b2c729dabb4b2bc",
+  "snapshot_timestamp": "2026-04-02T20:23:15.514733+00:00",
+  "tier1_agents": [
+    "agent1",
+    "agent2"
+  ],
+  "tier2_agent": "arbiter",
+  "tier2_injected": false,
+  "terminated_reason": "consensus",
+  "winning_hypothesis": "H_agent1",
+  "disagreement_score": 0.0,
+  "escalations": [],
+  "signal_manifold": {
+    "H_agent1": {
+      "S_g": 0.9,
+      "S_i": 0.0,
+      "S_net": 0.9
+    },
+    "H_agent2": {
+      "S_g": 1.0,
+      "S_i": 0.0,
+      "S_net": 1.0
+    }
+  },
+  "all_rounds": [
+    {
+      "session_id": "2b61bc39-fbdb-46e5-b86a-2372dc6136d9",
+      "round": 1,
+      "responses": [
+        {
+          "type": "agent.response",
+          "session_id": "2b61bc39-fbdb-46e5-b86a-2372dc6136d9",
+          "agent_id": "agent1",
+          "round": 1,
+          "snapshot_hash": "577878183e4ea963e3a7fef04717ae0c87eff93367aba3502b2c729dabb4b2bc",
+          "hypothesis_id": "H_agent1",
+          "answer": "{\"Alice\":\"knight\",\"Bob\":\"knave\",\"Charlie\":\"knave\"}",
+          "answer_hash": "6b58ca48d46a0640",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 0.9,
+            "inhibitory_pressure": 0.1
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "We denote each inhabitant\u2019s type as a Boolean: true = knight, false = knave.\n\n- Alice\u2019s statement: \u201cBob is a knave.\u201d  \n  Truth value = (Bob = false).  \n  If Alice is a knight (true) then Bob must be false; if Alice is a knave (false) then Bob must be true.  \n  Hence **Bob = \u00acAlice**.\n\n- Charlie\u2019s statement: \u201cAlice is a knave.\u201d  \n  Truth value = (Alice = false).  \n  If Charlie is a knight then Alice = false; if Charlie is a knave then Alice = true.  \n  Hence **Alice = \u00acCharlie**, i.e., **Charlie = \u00acAlice**.\n\nThus Bob and Charlie have the same type: both equal \u00acAlice.\n\n- Bob\u2019s statement: \u201cAlice and Charlie are of the same type.\u201d  \n  Truth value = (Alice = Charlie).  \n  Since Charlie = \u00acAlice, Alice = Charlie is equivalent to Alice = \u00acAlice, which is true only when Alice is false.  \n  Therefore, if Bob is a knight (true) we must have Alice = Charlie, which fails when Alice = true.  \n  The only consistent assignment is: Alice = true (knight), then Bob = false, Charlie = false, and Bob\u2019s statement is false (as required for a knave).\n\nChecking all statements:\n- Alice (knight) says \u201cBob is a knave.\u201d \u2013 true (Bob is knave).  \n- Bob (knave) says \u201cAlice and Charlie are the same type.\u201d \u2013 false (Alice is knight, Charlie is knave).  \n- Charlie (knave) says \u201cAlice is a knave.\u201d \u2013 false (Alice is knight).\n\nAll conditions are satisfied, and the alternative where Alice is knave leads to a contradiction. Hence the unique solution is:\nAlice \u2013 knight, Bob \u2013 knave, Charlie \u2013 knave."
+        },
+        {
+          "type": "agent.response",
+          "session_id": "2b61bc39-fbdb-46e5-b86a-2372dc6136d9",
+          "agent_id": "agent2",
+          "round": 1,
+          "snapshot_hash": "577878183e4ea963e3a7fef04717ae0c87eff93367aba3502b2c729dabb4b2bc",
+          "hypothesis_id": "H_agent2",
+          "answer": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}",
+          "answer_hash": "d794390ab92e91fd",
+          "signal": {
+            "confidence": 1.0,
+            "polarity": 1,
+            "generative_strength": 1.0,
+            "inhibitory_pressure": 0.0
+          },
+          "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": 1.0
+          },
+          "explanation": "{\"Alice\": \"knight\", \"Bob\": \"knave\", \"Charlie\": \"knave\"}"
+        }
+      ],
+      "accumulators": {
+        "H_agent1": {
+          "S_g": 0.9,
+          "S_i": 0.0,
+          "S_net": 0.9
+        },
+        "H_agent2": {
+          "S_g": 1.0,
+          "S_i": 0.0,
+          "S_net": 1.0
+        }
+      }
+    }
+  ],
+  "snapshot_vector": null,
+  "vectorized_bus": false,
+  "rat_similarity_threshold": 0.97,
+  "embedding_model": "nomic-embed-text",
+  "_elapsed_s": 482.05,
+  "_iep_validation": {
+    "envelope_id": "2c8fa4fa-2e8f-467d-93dd-3ca95c13f181",
+    "status": "NACK_SNAPSHOT_HASH",
+    "failure_reason": "Snapshot hash mismatch: envelope=577878183e4e... current=036d12c1a349...",
+    "checks_passed": [
+      "schema_completeness",
+      "ttl_freshness"
+    ],
+    "checks_failed": [
+      "snapshot_hash"
+    ],
+    "divergence_score": null,
+    "actual_delta": null,
+    "timestamp": "2026-04-02T20:23:15.517782+00:00"
+  }
+}

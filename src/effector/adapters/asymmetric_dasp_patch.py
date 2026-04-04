@@ -148,7 +148,7 @@ DEFAULT_TIER1_NEW = [
     #     host="http://127.0.0.1:11434",
     #     temperature=0.65,
     #     max_rounds=3,
-    #     characterizer_model="mistral",   # same model; fast enough for tool calls
+    #     characterizer_model="qwen2.5:14b",   # same model; fast enough for tool calls
     # ),
     # TierConfig(
     #     name="qwen",
@@ -156,7 +156,7 @@ DEFAULT_TIER1_NEW = [
     #     host="http://127.0.0.1:11434",
     #     temperature=0.75,
     #     max_rounds=3,
-    #     characterizer_model="mistral",   # delegate characterization to smaller model
+    #     characterizer_model="qwen2.5:14b",   # delegate characterization to smaller model
     # ),
 ]
 
@@ -168,6 +168,6 @@ DEFAULT_TIER2_NEW = (
     #     temperature=0.5,
     #     timeout_s=120.0,
     #     max_rounds=1,
-    #     characterizer_model="mistral",
+    #     characterizer_model="mistral:7b",
     # )
 )
