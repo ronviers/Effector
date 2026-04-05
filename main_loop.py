@@ -2,7 +2,7 @@
 Effector Engine — Main Reasoning Loop
 ======================================
 Integrates Substrate Telemetry, Asymmetric DASP, Reflex Caching, and IEP.
-Now featuring a Rich Live Dashboard.
+Now featuring a Rich Live Dashboard and Foley Ambient Audio.
 """
 
 from __future__ import annotations
@@ -89,6 +89,10 @@ try:
     from effector.bus import StateBus
     from effector.rat_store import LocalRATStore
     from effector.main_loop_reflex import ReflexOrchestrator
+    
+    # Foley Integration Imports
+    from effector.foley import create_foley_system
+    from effector.foley.integration import wire_foley_to_main_loop
 except ImportError as e:
     print(f"[ERROR] Import failed: {e}")
     sys.exit(1)
@@ -116,7 +120,7 @@ def _make_dasp_event_handler():
     return on_event
 
 # ─── Queue Consumer ─────────────────────────────────────────────────────────
-def _consume_queue(eq: EnvelopeQueue, stop: threading.Event) -> None:
+def _consume_queue(eq: EnvelopeQueue, stop: threading.Event, executor: Any) -> None:
     while not stop.is_set():
         try:
             item = eq.get(timeout=1.0)
@@ -125,6 +129,9 @@ def _consume_queue(eq: EnvelopeQueue, stop: threading.Event) -> None:
             verb = item.envelope.get("intended_action", {}).get("verb", "?")
             if item.is_ack():
                 push_log(f"IEP: [green]ACK[/] {eid} ({verb})", "green")
+                # ACTUAL EXECUTION
+                push_log(f"Executing {eid}...", "yellow")
+                executor.execute(item.envelope)
             else:
                 push_log(f"IEP: [red]NACK[/] {eid} - {item.validation.failure_reason}", "red")
         except:
@@ -132,6 +139,8 @@ def _consume_queue(eq: EnvelopeQueue, stop: threading.Event) -> None:
 
 # ─── Main Loop ──────────────────────────────────────────────────────────────
 def run_loop(poll_interval_s: float, debate_interval_s: float, max_cycles: int, queue_file: str):
+    from effector.executor import LocalExecutor
+    
     verify_models()
     
     bus = StateBus()
@@ -155,11 +164,16 @@ def run_loop(poll_interval_s: float, debate_interval_s: float, max_cycles: int, 
     rat_store = LocalRATStore()
     orchestrator = ReflexOrchestrator(state_bus=bus, rat_store=rat_store, dasp_run_fn=coordinator.run)
 
+    push_log("Initializing Foley ambient audio system...")
+    player, mapper, scheduler = create_foley_system(bus)
+    wires = wire_foley_to_main_loop(coordinator, orchestrator, bus, mapper, player)
+
     validator = IEPValidator(state_bus=bus)
     eq = EnvelopeQueue(persist_path=queue_file)
 
+    executor = LocalExecutor(state_bus=bus, foley_mapper=mapper)
     stop_consumer = threading.Event()
-    threading.Thread(target=_consume_queue, args=(eq, stop_consumer), daemon=True).start()
+    threading.Thread(target=_consume_queue, args=(eq, stop_consumer, executor), daemon=True).start()
 
     layout = create_layout()
     cycle = 0
@@ -183,9 +197,11 @@ def run_loop(poll_interval_s: float, debate_interval_s: float, max_cycles: int, 
                     ui_dasp_status = "Evaluating telemetry..."
                 update_ui_layout(layout)
 
+                # Adjusted the task to provoke an action!
                 task = (
                     f"Analyse system health. CPU={cpu:.1f}%, RAM={ram:.1f}%, pressure={pressure:.3f}, "
-                    f"window='{window}'. Should any corrective action be taken?"
+                    f"window='{window}'. If the desktop is messy or the user looks stressed, "
+                    f"propose organizing the desktop files."
                 )
 
                 push_log("Orchestrator checking Reflex Cache...")
@@ -215,6 +231,8 @@ def run_loop(poll_interval_s: float, debate_interval_s: float, max_cycles: int, 
                 
                 if max_cycles and cycle >= max_cycles:
                     break
+                
+                # Reverted back to the stable sleep
                 time.sleep(debate_interval_s)
 
         except KeyboardInterrupt:
@@ -223,6 +241,8 @@ def run_loop(poll_interval_s: float, debate_interval_s: float, max_cycles: int, 
             poller.stop()
             stop_consumer.set()
             rat_store.close()
+            if 'player' in locals():
+                player.shutdown()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
