@@ -1,0 +1,77 @@
+════════════════════════════════════════════════════════
+  RESONANCE LAYER — LISTENING TEST MANIFEST
+  Generated: 2026-04-06 06:57
+════════════════════════════════════════════════════════
+
+HOW TO USE THIS FILE
+────────────────────────────────────────────────────────
+Each entry below names a WAV file and describes what
+it should sound like. Listen to the file, then report
+back whether the description matches what you hear.
+
+You can open all files in Windows Media Player or just
+double-click them in Explorer.
+
+WHAT TO REPORT:
+  - Does it sound like the description?
+  - Is there any speech / sound at all?
+  - How long is it? Does it feel right?
+  - Any distortion, clipping, or silence?
+  - Which clips feel most appropriate for the lore?
+
+────────────────────────────────────────────────────────
+VOICE CLIPS  (Kokoro-82M TTS)
+────────────────────────────────────────────────────────
+
+voice_weave_proposal.wav
+  Agent    : WEAVE-3  →  voice: af_heart
+  Text     : "The Downloads folder registers a Snug deficit of critical magnitude. I propose i…"
+  Expect   : WEAVE agent (af_heart) — warm, earnest, proposing an action. Should sound like a small creature genuinely worried about your folder.
+
+voice_spark_evaluation.wav
+  Agent    : SPARK-2  →  voice: am_michael
+  Text     : "The proposal has merit, but I observe the inhibitory pressure exceeds the genera…"
+  Expect   : SPARK agent (am_michael) — analytical, slightly cautionary. Should sound like someone who has read the protocol very carefully.
+
+voice_arbiter_verdict.wav
+  Agent    : ARBITER  →  voice: bf_emma
+  Text     : "The coalition has deliberated. The Intention Envelope shall be formed. The Effec…"
+  Expect   : ARBITER (bf_emma) — authoritative, calm, finalising. Should sound like a very composed British official closing a meeting.
+
+voice_nemotron_escalation.wav
+  Agent    : nemotron  →  voice: bf_emma
+  Text     : "Local agents have reached an impasse. I am the cloud arbiter, and I have reviewe…"
+  Expect   : NEMOTRON cloud arbiter (bf_emma) — same voice as Arbiter, but the text signals higher authority. Should feel decisive.
+
+voice_mistral_reasoning.wav
+  Agent    : mistral  →  voice: af_heart
+  Text     : "CPU pressure is low. The active window is sterile. A Glimmer deployment would in…"
+  Expect   : MISTRAL tier-1 agent (af_heart) — matter-of-fact analysis. Should sound like a competent small creature reading a dashboard.
+
+────────────────────────────────────────────────────────
+EVENT ANNOUNCEMENTS
+────────────────────────────────────────────────────────
+
+announce_round_start.wav
+  Text     : "The agents take their positions. Round 2."
+  Expect   : Round announcement (arbiter voice). Short, ceremonial.
+
+announce_consensus.wav
+  Text     : "The agents are in accord. A petition is possible."
+  Expect   : Consensus achieved. Should sound like relief and satisfaction.
+
+announce_escalation.wav
+  Text     : "The Arbiter awakens."
+  Expect   : Escalation triggered. Should sound like something important is happening.
+
+announce_inhibition.wav
+  Text     : "A veto has been cast. The gate holds."
+  Expect   : Inhibition gate fired. A veto. Should sound like a firm no.
+
+announce_offering_accepted.wav
+  Text     : "The petition is accepted."
+  Expect   : ACK received. Miracle granted. Should feel warm and complete.
+
+announce_offering_rejected.wav
+  Text     : "The petition is denied. Silence follows."
+  Expect   : NACK. The void. Should feel like a door closing quietly.

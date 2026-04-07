@@ -1,10 +1,11 @@
 =================================================================
   SESSION CONTEXT
-  2026-04-05 15:52:44
+  2026-04-07 13:44:52
 =================================================================
 
 Branch: main
 Recent commits:
+  9808f1e auto update
   f9acf74 auto update
   72faa4e auto update
   bddbe93 auto update
@@ -12,400 +13,368 @@ Recent commits:
   a5243de auto update
   475cbb1 auto update
   0c324b9 auto update
-  5d06641 auto update
 
 Uncommitted changes:
-  D .tmp.driveupload/2932
-   D .tmp.driveupload/3248
-   D .tmp.driveupload/3293
-   D .tmp.driveupload/3860
-   D .tmp.driveupload/3878
-   D .tmp.driveupload/3928
-   D .tmp.driveupload/3930
-   D .tmp.driveupload/3932
-   D .tmp.driveupload/4880
-   D .tmp.driveupload/4884
-   D .tmp.driveupload/5285
-   D .tmp.driveupload/6043
-   D .tmp.driveupload/6045
-   D .tmp.driveupload/6047
-   D .tmp.driveupload/6049
-   D .tmp.driveupload/6051
-   D .tmp.driveupload/6053
-   D .tmp.driveupload/6057
-   D .tmp.driveupload/6059
-   D .tmp.driveupload/6061
-   D .tmp.driveupload/6063
-   D .tmp.driveupload/6065
-   D .tmp.driveupload/6067
-   D .tmp.driveupload/6069
-   D .tmp.driveupload/6071
-   D .tmp.driveupload/6073
-   D .tmp.driveupload/6075
-   D .tmp.driveupload/6077
-   D .tmp.driveupload/6079
-   D .tmp.driveupload/6081
-   D .tmp.driveupload/6083
-   D .tmp.driveupload/6089
-   D .tmp.driveupload/6091
-   D .tmp.driveupload/6093
-   D .tmp.driveupload/6095
-   D .tmp.driveupload/6097
-   D .tmp.driveupload/6099
-   D .tmp.driveupload/6101
-   D .tmp.driveupload/6103
-   D .tmp.driveupload/6105
-   D .tmp.driveupload/6107
-   D .tmp.driveupload/6109
-   D .tmp.driveupload/6111
-   D .tmp.driveupload/6113
-   D .tmp.driveupload/6115
-   D .tmp.driveupload/6117
-   D .tmp.driveupload/6119
-   D .tmp.driveupload/6123
-   D .tmp.driveupload/6125
-   D .tmp.driveupload/6127
-   D .tmp.driveupload/6133
-   D .tmp.driveupload/6135
-   D .tmp.driveupload/6137
-   D context.txt
-   M data/rats.db
+  D context.txt
    M main_loop.py
-  ?? .tmp.driveupload/6141
-  ?? .tmp.driveupload/6143
-  ?? .tmp.driveupload/6145
-  ?? .tmp.driveupload/6147
-  ?? .tmp.driveupload/6149
-  ?? .tmp.driveupload/6151
-  ?? .tmp.driveupload/6153
-  ?? .tmp.driveupload/6155
-  ?? .tmp.driveupload/6157
-  ?? .tmp.driveupload/6159
-  ?? .tmp.driveupload/6161
-  ?? .tmp.driveupload/6163
-  ?? .tmp.driveupload/6165
-  ?? .tmp.driveupload/6167
-  ?? .tmp.driveupload/6169
-  ?? .tmp.driveupload/6171
-  ?? .tmp.driveupload/6173
-  ?? .tmp.driveupload/6175
-  ?? .tmp.driveupload/6177
-  ?? .tmp.driveupload/6179
-  ?? .tmp.driveupload/6183
-  ?? .tmp.driveupload/6185
-  ?? .tmp.driveupload/6187
-  ?? .tmp.driveupload/6189
-  ?? .tmp.driveupload/6191
-  ?? .tmp.driveupload/6193
-  ?? .tmp.driveupload/6195
-  ?? .tmp.driveupload/6197
-  ?? .tmp.driveupload/6199
-  ?? .tmp.driveupload/6201
-  ?? .tmp.driveupload/6203
-  ?? .tmp.driveupload/6205
-  ?? .tmp.driveupload/6207
-  ?? .tmp.driveupload/6209
-  ?? .tmp.driveupload/6211
-  ?? .tmp.driveupload/6213
-  ?? .tmp.driveupload/6215
-  ?? .tmp.driveupload/6217
-  ?? .tmp.driveupload/6219
-  ?? .tmp.driveupload/6221
-  ?? .tmp.driveupload/6223
-  ?? .tmp.driveupload/6225
-  ?? .tmp.driveupload/6227
-  ?? .tmp.driveupload/6229
-  ?? .tmp.driveupload/6231
-  ?? .tmp.driveupload/6233
-  ?? .tmp.driveupload/6235
-  ?? .tmp.driveupload/6237
-  ?? .tmp.driveupload/6239
-  ?? .tmp.driveupload/6241
-  ?? .tmp.driveupload/6243
-  ?? .tmp.driveupload/6245
-  ?? .tmp.driveupload/6247
-  ?? .tmp.driveupload/6249
-  ?? .tmp.driveupload/6251
-  ?? .tmp.driveupload/6253
-  ?? .tmp.driveupload/6255
-  ?? .tmp.driveupload/6257
-  ?? .tmp.driveupload/6259
-  ?? .tmp.driveupload/6261
-  ?? .tmp.driveupload/6263
-  ?? .tmp.driveupload/6265
-  ?? .tmp.driveupload/6267
-  ?? .tmp.driveupload/6269
-  ?? .tmp.driveupload/6273
-  ?? .tmp.driveupload/6275
-  ?? .tmp.driveupload/6277
-  ?? .tmp.driveupload/6279
-  ?? .tmp.driveupload/6281
-  ?? .tmp.driveupload/6283
-  ?? .tmp.driveupload/6285
-  ?? .tmp.driveupload/6287
-  ?? .tmp.driveupload/6289
-  ?? .tmp.driveupload/6291
-  ?? .tmp.driveupload/6293
-  ?? .tmp.driveupload/6295
-  ?? .tmp.driveupload/6297
-  ?? .tmp.driveupload/6299
-  ?? .tmp.driveupload/6301
-  ?? .tmp.driveupload/6303
-  ?? .tmp.driveupload/6305
-  ?? .tmp.driveupload/6307
-  ?? .tmp.driveupload/6309
-  ?? .tmp.driveupload/6311
-  ?? .tmp.driveupload/6313
-  ?? .tmp.driveupload/6315
-  ?? .tmp.driveupload/6317
-  ?? .tmp.driveupload/6319
-  ?? .tmp.driveupload/6321
-  ?? .tmp.driveupload/6323
-  ?? .tmp.driveupload/6325
-  ?? .tmp.driveupload/6327
-  ?? .tmp.driveupload/6329
-  ?? .tmp.driveupload/6331
-  ?? .tmp.driveupload/6333
-  ?? .tmp.driveupload/6335
-  ?? .tmp.driveupload/6337
-  ?? .tmp.driveupload/6339
-  ?? .tmp.driveupload/6341
-  ?? .tmp.driveupload/6343
-  ?? .tmp.driveupload/6345
-  ?? .tmp.driveupload/6347
-  ?? .tmp.driveupload/6349
-  ?? .tmp.driveupload/6351
-  ?? .tmp.driveupload/6353
-  ?? .tmp.driveupload/6355
-  ?? .tmp.driveupload/6357
-  ?? .tmp.driveupload/6359
-  ?? .tmp.driveupload/6361
-  ?? .tmp.driveupload/6363
-  ?? .tmp.driveupload/6365
-  ?? .tmp.driveupload/6367
-  ?? .tmp.driveupload/6369
-  ?? .tmp.driveupload/6371
-  ?? .tmp.driveupload/6373
-  ?? .tmp.driveupload/6375
-  ?? .tmp.driveupload/6377
-  ?? .tmp.driveupload/6379
-  ?? .tmp.driveupload/6381
-  ?? .tmp.driveupload/6383
-  ?? .tmp.driveupload/6385
-  ?? .tmp.driveupload/6387
-  ?? .tmp.driveupload/6389
-  ?? .tmp.driveupload/6391
-  ?? .tmp.driveupload/6393
-  ?? .tmp.driveupload/6395
-  ?? .tmp.driveupload/6399
-  ?? .tmp.driveupload/6401
-  ?? .tmp.driveupload/6403
-  ?? .tmp.driveupload/6405
-  ?? .tmp.driveupload/6407
-  ?? .tmp.driveupload/6409
-  ?? .tmp.driveupload/6411
-  ?? .tmp.driveupload/6413
-  ?? .tmp.driveupload/6415
-  ?? .tmp.driveupload/6417
-  ?? .tmp.driveupload/6419
-  ?? .tmp.driveupload/6421
-  ?? .tmp.driveupload/6423
-  ?? .tmp.driveupload/6425
-  ?? .tmp.driveupload/6427
-  ?? .tmp.driveupload/6429
-  ?? .tmp.driveupload/6431
-  ?? .tmp.driveupload/6433
-  ?? .tmp.driveupload/6435
-  ?? .tmp.driveupload/6437
-  ?? .tmp.driveupload/6439
-  ?? .tmp.driveupload/6441
-  ?? .tmp.driveupload/6443
-  ?? .tmp.driveupload/6445
-  ?? .tmp.driveupload/6447
-  ?? .tmp.driveupload/6449
-  ?? .tmp.driveupload/6451
-  ?? .tmp.driveupload/6453
-  ?? .tmp.driveupload/6455
-  ?? .tmp.driveupload/6457
-  ?? .tmp.driveupload/6459
-  ?? .tmp.driveupload/6461
-  ?? .tmp.driveupload/6463
-  ?? .tmp.driveupload/6465
-  ?? .tmp.driveupload/6467
-  ?? .tmp.driveupload/6469
-  ?? .tmp.driveupload/6473
-  ?? .tmp.driveupload/6475
-  ?? .tmp.driveupload/6477
-  ?? .tmp.driveupload/6479
-  ?? .tmp.driveupload/6481
-  ?? .tmp.driveupload/6483
-  ?? .tmp.driveupload/6485
-  ?? .tmp.driveupload/6487
-  ?? .tmp.driveupload/6489
-  ?? .tmp.driveupload/6491
-  ?? .tmp.driveupload/6493
-  ?? .tmp.driveupload/6495
-  ?? .tmp.driveupload/6497
-  ?? .tmp.driveupload/6499
-  ?? .tmp.driveupload/6501
-  ?? .tmp.driveupload/6503
-  ?? .tmp.driveupload/6505
-  ?? .tmp.driveupload/6507
-  ?? .tmp.driveupload/6509
-  ?? .tmp.driveupload/6511
-  ?? .tmp.driveupload/6513
-  ?? .tmp.driveupload/6515
-  ?? .tmp.driveupload/6517
-  ?? .tmp.driveupload/6519
-  ?? .tmp.driveupload/6521
-  ?? .tmp.driveupload/6523
-  ?? .tmp.driveupload/6525
-  ?? .tmp.driveupload/6529
-  ?? .tmp.driveupload/6531
-  ?? .tmp.driveupload/6533
-  ?? .tmp.driveupload/6535
-  ?? .tmp.driveupload/6537
-  ?? .tmp.driveupload/6539
-  ?? .tmp.driveupload/6541
-  ?? .tmp.driveupload/6543
-  ?? .tmp.driveupload/6545
-  ?? .tmp.driveupload/6547
-  ?? .tmp.driveupload/6549
-  ?? .tmp.driveupload/6551
-  ?? .tmp.driveupload/6553
-  ?? .tmp.driveupload/6555
-  ?? .tmp.driveupload/6557
-  ?? .tmp.driveupload/6559
-  ?? .tmp.driveupload/6561
-  ?? .tmp.driveupload/6563
-  ?? .tmp.driveupload/6565
-  ?? .tmp.driveupload/6567
-  ?? .tmp.driveupload/6569
-  ?? .tmp.driveupload/6571
-  ?? .tmp.driveupload/6573
-  ?? .tmp.driveupload/6575
-  ?? .tmp.driveupload/6577
-  ?? .tmp.driveupload/6579
-  ?? .tmp.driveupload/6581
-  ?? .tmp.driveupload/6583
-  ?? .tmp.driveupload/6585
-  ?? .tmp.driveupload/6587
-  ?? .tmp.driveupload/6589
-  ?? .tmp.driveupload/6591
-  ?? .tmp.driveupload/6593
-  ?? .tmp.driveupload/6595
-  ?? .tmp.driveupload/6597
-  ?? .tmp.driveupload/6599
-  ?? .tmp.driveupload/6601
-  ?? .tmp.driveupload/6603
-  ?? .tmp.driveupload/6605
-  ?? .tmp.driveupload/6607
-  ?? .tmp.driveupload/6609
-  ?? .tmp.driveupload/6611
-  ?? .tmp.driveupload/6613
-  ?? .tmp.driveupload/6615
-  ?? .tmp.driveupload/6617
-  ?? .tmp.driveupload/6619
-  ?? .tmp.driveupload/6621
-  ?? .tmp.driveupload/6623
-  ?? .tmp.driveupload/6625
-  ?? .tmp.driveupload/6627
-  ?? .tmp.driveupload/6629
-  ?? .tmp.driveupload/6631
-  ?? .tmp.driveupload/6633
-  ?? .tmp.driveupload/6635
-  ?? .tmp.driveupload/6637
-  ?? .tmp.driveupload/6639
-  ?? .tmp.driveupload/6641
-  ?? .tmp.driveupload/6643
-  ?? .tmp.driveupload/6645
-  ?? .tmp.driveupload/6647
-  ?? .tmp.driveupload/6649
-  ?? .tmp.driveupload/6651
-  ?? .tmp.driveupload/6653
-  ?? .tmp.driveupload/6655
-  ?? .tmp.driveupload/6657
-  ?? .tmp.driveupload/6659
-  ?? .tmp.driveupload/6661
-  ?? .tmp.driveupload/6663
-  ?? .tmp.driveupload/6665
-  ?? .tmp.driveupload/6667
-  ?? .tmp.driveupload/6669
-  ?? .tmp.driveupload/6671
-  ?? .tmp.driveupload/6673
-  ?? .tmp.driveupload/6675
-  ?? .tmp.driveupload/6677
-  ?? .tmp.driveupload/6679
-  ?? .tmp.driveupload/6681
-  ?? .tmp.driveupload/6683
-  ?? .tmp.driveupload/6685
-  ?? .tmp.driveupload/6687
-  ?? .tmp.driveupload/6689
-  ?? .tmp.driveupload/6691
-  ?? .tmp.driveupload/6693
-  ?? .tmp.driveupload/6695
-  ?? .tmp.driveupload/6697
-  ?? .tmp.driveupload/6699
-  ?? .tmp.driveupload/6701
-  ?? .tmp.driveupload/6703
-  ?? .tmp.driveupload/6705
-  ?? .tmp.driveupload/6707
-  ?? .tmp.driveupload/6709
-  ?? .tmp.driveupload/6713
-  ?? .tmp.driveupload/6715
-  ?? .tmp.driveupload/6717
-  ?? .tmp.driveupload/6719
-  ?? .tmp.driveupload/6721
-  ?? .tmp.driveupload/6723
-  ?? .tmp.driveupload/6725
-  ?? .tmp.driveupload/6727
-  ?? .tmp.driveupload/6729
-  ?? .tmp.driveupload/6731
-  ?? .tmp.driveupload/6733
-  ?? .tmp.driveupload/6735
-  ?? .tmp.driveupload/6737
-  ?? .tmp.driveupload/6739
-  ?? .tmp.driveupload/6741
-  ?? .tmp.driveupload/6743
-  ?? .tmp.driveupload/6745
-  ?? .tmp.driveupload/6747
-  ?? .tmp.driveupload/6749
-  ?? .tmp.driveupload/6751
-  ?? .tmp.driveupload/6753
-  ?? .tmp.driveupload/6755
-  ?? .tmp.driveupload/6757
-  ?? .tmp.driveupload/6759
-  ?? .tmp.driveupload/6761
-  ?? .tmp.driveupload/6763
-  ?? .tmp.driveupload/6765
-  ?? .tmp.driveupload/6767
-  ?? .tmp.driveupload/6769
-  ?? .tmp.driveupload/6771
-  ?? .tmp.driveupload/6773
-  ?? .tmp.driveupload/6775
-  ?? .tmp.driveupload/6777
-  ?? .tmp.driveupload/6779
-  ?? .tmp.driveupload/6781
-  ?? .tmp.driveupload/6783
-  ?? .tmp.driveupload/6785
-  ?? .tmp.driveupload/6787
-  ?? .tmp.driveupload/6789
-  ?? .tmp.driveupload/6791
-  ?? .tmp.driveupload/6793
-  ?? .tmp.driveupload/6795
-  ?? .tmp.driveupload/6797
-  ?? .tmp.driveupload/6799
-  ?? .tmp.driveupload/6801
-  ?? .tmp.driveupload/6803
-  ?? .tmp.driveupload/6805
-  ?? .tmp.driveupload/6807
-  ?? .tmp.driveupload/6809
-  ?? data/rats.db-shm
-  ?? data/rats.db-wal
-  ?? rescue_foley.py
-  ?? src/effector/executor.py
-  ?? src/effector/foley/
-  ?? verify_foley.py
+  ?? .tmp.driveupload/6881
+  ?? .tmp.driveupload/6883
+  ?? .tmp.driveupload/6885
+  ?? .tmp.driveupload/6887
+  ?? .tmp.driveupload/6889
+  ?? .tmp.driveupload/6891
+  ?? .tmp.driveupload/6893
+  ?? .tmp.driveupload/6895
+  ?? .tmp.driveupload/6897
+  ?? .tmp.driveupload/6899
+  ?? .tmp.driveupload/6901
+  ?? .tmp.driveupload/6903
+  ?? .tmp.driveupload/6905
+  ?? .tmp.driveupload/6907
+  ?? .tmp.driveupload/6909
+  ?? .tmp.driveupload/6911
+  ?? .tmp.driveupload/6913
+  ?? .tmp.driveupload/6915
+  ?? .tmp.driveupload/6917
+  ?? .tmp.driveupload/6919
+  ?? .tmp.driveupload/6921
+  ?? .tmp.driveupload/6923
+  ?? .tmp.driveupload/6925
+  ?? .tmp.driveupload/6927
+  ?? .tmp.driveupload/6929
+  ?? .tmp.driveupload/6931
+  ?? .tmp.driveupload/6933
+  ?? .tmp.driveupload/6935
+  ?? .tmp.driveupload/6937
+  ?? .tmp.driveupload/6939
+  ?? .tmp.driveupload/6941
+  ?? .tmp.driveupload/6943
+  ?? .tmp.driveupload/6945
+  ?? .tmp.driveupload/6947
+  ?? .tmp.driveupload/6949
+  ?? .tmp.driveupload/6951
+  ?? .tmp.driveupload/6953
+  ?? .tmp.driveupload/6955
+  ?? .tmp.driveupload/6957
+  ?? .tmp.driveupload/6959
+  ?? .tmp.driveupload/6961
+  ?? .tmp.driveupload/6963
+  ?? .tmp.driveupload/6965
+  ?? .tmp.driveupload/6967
+  ?? .tmp.driveupload/6969
+  ?? .tmp.driveupload/6971
+  ?? .tmp.driveupload/6973
+  ?? .tmp.driveupload/6975
+  ?? .tmp.driveupload/6977
+  ?? .tmp.driveupload/6979
+  ?? .tmp.driveupload/6981
+  ?? .tmp.driveupload/6983
+  ?? .tmp.driveupload/6985
+  ?? .tmp.driveupload/6987
+  ?? .tmp.driveupload/6989
+  ?? .tmp.driveupload/6991
+  ?? .tmp.driveupload/6993
+  ?? .tmp.driveupload/6995
+  ?? .tmp.driveupload/6997
+  ?? .tmp.driveupload/6999
+  ?? .tmp.driveupload/7001
+  ?? .tmp.driveupload/7003
+  ?? .tmp.driveupload/7005
+  ?? .tmp.driveupload/7007
+  ?? .tmp.driveupload/7009
+  ?? .tmp.driveupload/7011
+  ?? .tmp.driveupload/7013
+  ?? .tmp.driveupload/7015
+  ?? .tmp.driveupload/7017
+  ?? .tmp.driveupload/7019
+  ?? .tmp.driveupload/7021
+  ?? .tmp.driveupload/7023
+  ?? .tmp.driveupload/7025
+  ?? .tmp.driveupload/7027
+  ?? .tmp.driveupload/7029
+  ?? .tmp.driveupload/7031
+  ?? .tmp.driveupload/7033
+  ?? .tmp.driveupload/7035
+  ?? .tmp.driveupload/7037
+  ?? .tmp.driveupload/7039
+  ?? .tmp.driveupload/7041
+  ?? .tmp.driveupload/7043
+  ?? .tmp.driveupload/7045
+  ?? .tmp.driveupload/7047
+  ?? .tmp.driveupload/7049
+  ?? .tmp.driveupload/7051
+  ?? .tmp.driveupload/7053
+  ?? .tmp.driveupload/7055
+  ?? .tmp.driveupload/7057
+  ?? .tmp.driveupload/7059
+  ?? .tmp.driveupload/7061
+  ?? .tmp.driveupload/7063
+  ?? .tmp.driveupload/7065
+  ?? .tmp.driveupload/7067
+  ?? .tmp.driveupload/7069
+  ?? .tmp.driveupload/7071
+  ?? .tmp.driveupload/7073
+  ?? .tmp.driveupload/7075
+  ?? .tmp.driveupload/7077
+  ?? .tmp.driveupload/7079
+  ?? .tmp.driveupload/7081
+  ?? .tmp.driveupload/7083
+  ?? .tmp.driveupload/7085
+  ?? .tmp.driveupload/7087
+  ?? .tmp.driveupload/7089
+  ?? .tmp.driveupload/7091
+  ?? .tmp.driveupload/7093
+  ?? .tmp.driveupload/7095
+  ?? .tmp.driveupload/7097
+  ?? .tmp.driveupload/7099
+  ?? .tmp.driveupload/7101
+  ?? .tmp.driveupload/7103
+  ?? .tmp.driveupload/7105
+  ?? .tmp.driveupload/7107
+  ?? .tmp.driveupload/7109
+  ?? .tmp.driveupload/7111
+  ?? .tmp.driveupload/7113
+  ?? .tmp.driveupload/7115
+  ?? .tmp.driveupload/7117
+  ?? .tmp.driveupload/7119
+  ?? .tmp.driveupload/7121
+  ?? .tmp.driveupload/7123
+  ?? .tmp.driveupload/7125
+  ?? .tmp.driveupload/7127
+  ?? .tmp.driveupload/7129
+  ?? .tmp.driveupload/7131
+  ?? .tmp.driveupload/7133
+  ?? .tmp.driveupload/7135
+  ?? .tmp.driveupload/7137
+  ?? .tmp.driveupload/7139
+  ?? .tmp.driveupload/7141
+  ?? .tmp.driveupload/7143
+  ?? .tmp.driveupload/7145
+  ?? .tmp.driveupload/7147
+  ?? .tmp.driveupload/7149
+  ?? .tmp.driveupload/7151
+  ?? .tmp.driveupload/7153
+  ?? .tmp.driveupload/7155
+  ?? .tmp.driveupload/7157
+  ?? .tmp.driveupload/7159
+  ?? .tmp.driveupload/7161
+  ?? .tmp.driveupload/7163
+  ?? .tmp.driveupload/7165
+  ?? .tmp.driveupload/7167
+  ?? .tmp.driveupload/7169
+  ?? .tmp.driveupload/7171
+  ?? .tmp.driveupload/7173
+  ?? .tmp.driveupload/7175
+  ?? .tmp.driveupload/7177
+  ?? .tmp.driveupload/7179
+  ?? .tmp.driveupload/7181
+  ?? .tmp.driveupload/7183
+  ?? .tmp.driveupload/7185
+  ?? .tmp.driveupload/7187
+  ?? .tmp.driveupload/7189
+  ?? .tmp.driveupload/7191
+  ?? .tmp.driveupload/7193
+  ?? .tmp.driveupload/7195
+  ?? .tmp.driveupload/7197
+  ?? .tmp.driveupload/7199
+  ?? .tmp.driveupload/7201
+  ?? .tmp.driveupload/7203
+  ?? .tmp.driveupload/7205
+  ?? .tmp.driveupload/7207
+  ?? .tmp.driveupload/7209
+  ?? .tmp.driveupload/7211
+  ?? .tmp.driveupload/7213
+  ?? .tmp.driveupload/7215
+  ?? .tmp.driveupload/7217
+  ?? .tmp.driveupload/7219
+  ?? .tmp.driveupload/7221
+  ?? .tmp.driveupload/7223
+  ?? .tmp.driveupload/7225
+  ?? .tmp.driveupload/7227
+  ?? .tmp.driveupload/7229
+  ?? .tmp.driveupload/7231
+  ?? .tmp.driveupload/7233
+  ?? .tmp.driveupload/7235
+  ?? .tmp.driveupload/7237
+  ?? .tmp.driveupload/7239
+  ?? .tmp.driveupload/7241
+  ?? .tmp.driveupload/7243
+  ?? .tmp.driveupload/7245
+  ?? .tmp.driveupload/7247
+  ?? .tmp.driveupload/7249
+  ?? .tmp.driveupload/7251
+  ?? .tmp.driveupload/7253
+  ?? .tmp.driveupload/7255
+  ?? .tmp.driveupload/7257
+  ?? .tmp.driveupload/7259
+  ?? .tmp.driveupload/7261
+  ?? .tmp.driveupload/7263
+  ?? .tmp.driveupload/7265
+  ?? .tmp.driveupload/7267
+  ?? .tmp.driveupload/7269
+  ?? .tmp.driveupload/7271
+  ?? .tmp.driveupload/7273
+  ?? .tmp.driveupload/7275
+  ?? .tmp.driveupload/7277
+  ?? .tmp.driveupload/7279
+  ?? .tmp.driveupload/7281
+  ?? .tmp.driveupload/7283
+  ?? .tmp.driveupload/7285
+  ?? .tmp.driveupload/7287
+  ?? .tmp.driveupload/7289
+  ?? .tmp.driveupload/7291
+  ?? .tmp.driveupload/7293
+  ?? .tmp.driveupload/7295
+  ?? .tmp.driveupload/7297
+  ?? .tmp.driveupload/7299
+  ?? .tmp.driveupload/7301
+  ?? .tmp.driveupload/7303
+  ?? .tmp.driveupload/7305
+  ?? .tmp.driveupload/7307
+  ?? .tmp.driveupload/7309
+  ?? .tmp.driveupload/7311
+  ?? .tmp.driveupload/7313
+  ?? .tmp.driveupload/7315
+  ?? .tmp.driveupload/7317
+  ?? .tmp.driveupload/7321
+  ?? .tmp.driveupload/7323
+  ?? .tmp.driveupload/7325
+  ?? .tmp.driveupload/7327
+  ?? .tmp.driveupload/7329
+  ?? .tmp.driveupload/7331
+  ?? .tmp.driveupload/7333
+  ?? .tmp.driveupload/7335
+  ?? .tmp.driveupload/7337
+  ?? .tmp.driveupload/7339
+  ?? .tmp.driveupload/7341
+  ?? .tmp.driveupload/7343
+  ?? .tmp.driveupload/7345
+  ?? .tmp.driveupload/7347
+  ?? .tmp.driveupload/7349
+  ?? .tmp.driveupload/7351
+  ?? .tmp.driveupload/7353
+  ?? .tmp.driveupload/7355
+  ?? .tmp.driveupload/7357
+  ?? .tmp.driveupload/7359
+  ?? .tmp.driveupload/7361
+  ?? .tmp.driveupload/7363
+  ?? .tmp.driveupload/7365
+  ?? .tmp.driveupload/7367
+  ?? .tmp.driveupload/7369
+  ?? .tmp.driveupload/7371
+  ?? .tmp.driveupload/7373
+  ?? .tmp.driveupload/7375
+  ?? .tmp.driveupload/7377
+  ?? .tmp.driveupload/7379
+  ?? .tmp.driveupload/7381
+  ?? .tmp.driveupload/7383
+  ?? .tmp.driveupload/7385
+  ?? .tmp.driveupload/7387
+  ?? .tmp.driveupload/7389
+  ?? .tmp.driveupload/7391
+  ?? .tmp.driveupload/7393
+  ?? .tmp.driveupload/7395
+  ?? .tmp.driveupload/7397
+  ?? .tmp.driveupload/7399
+  ?? .tmp.driveupload/7401
+  ?? .tmp.driveupload/7403
+  ?? .tmp.driveupload/7405
+  ?? .tmp.driveupload/7407
+  ?? .tmp.driveupload/7409
+  ?? .tmp.driveupload/7411
+  ?? .tmp.driveupload/7413
+  ?? .tmp.driveupload/7415
+  ?? .tmp.driveupload/7417
+  ?? .tmp.driveupload/7419
+  ?? .tmp.driveupload/7421
+  ?? .tmp.driveupload/7423
+  ?? .tmp.driveupload/7425
+  ?? .tmp.driveupload/7427
+  ?? .tmp.driveupload/7429
+  ?? .tmp.driveupload/7431
+  ?? .tmp.driveupload/7433
+  ?? .tmp.driveupload/7435
+  ?? .tmp.driveupload/7437
+  ?? .tmp.driveupload/7439
+  ?? .tmp.driveupload/7441
+  ?? .tmp.driveupload/7443
+  ?? .tmp.driveupload/7445
+  ?? .tmp.driveupload/7447
+  ?? .tmp.driveupload/7449
+  ?? .tmp.driveupload/7451
+  ?? .tmp.driveupload/7453
+  ?? .tmp.driveupload/7455
+  ?? .tmp.driveupload/7457
+  ?? .tmp.driveupload/7459
+  ?? .tmp.driveupload/7461
+  ?? .tmp.driveupload/7463
+  ?? .tmp.driveupload/7465
+  ?? .tmp.driveupload/7467
+  ?? .tmp.driveupload/7469
+  ?? .tmp.driveupload/7471
+  ?? .tmp.driveupload/7473
+  ?? .tmp.driveupload/7475
+  ?? .tmp.driveupload/7477
+  ?? .tmp.driveupload/7479
+  ?? .tmp.driveupload/7481
+  ?? .tmp.driveupload/7483
+  ?? .tmp.driveupload/7485
+  ?? .tmp.driveupload/7487
+  ?? .tmp.driveupload/7489
+  ?? .tmp.driveupload/7491
+  ?? .tmp.driveupload/7493
+  ?? .tmp.driveupload/7495
+  ?? .tmp.driveupload/7497
+  ?? .tmp.driveupload/7499
+  ?? .tmp.driveupload/7501
+  ?? .tmp.driveupload/7503
+  ?? .tmp.driveupload/7505
+  ?? .tmp.driveupload/7507
+  ?? .tmp.driveupload/7509
+  ?? .tmp.driveupload/7511
+  ?? .tmp.driveupload/7513
+  ?? .tmp.driveupload/7515
+  ?? .tmp.driveupload/7517
+  ?? .tmp.driveupload/7519
+  ?? .tmp.driveupload/7521
+  ?? .tmp.driveupload/7523
+  ?? .tmp.driveupload/7525
+  ?? .tmp.driveupload/7527
+  ?? .tmp.driveupload/7529
+  ?? .tmp.driveupload/7531
+  ?? .tmp.driveupload/7533
+  ?? .tmp.driveupload/7535
+  ?? .tmp.driveupload/7537
+  ?? .tmp.driveupload/7539
+  ?? .tmp.driveupload/7541
+  ?? .tmp.driveupload/7543
+  ?? .tmp.driveupload/7545
+  ?? .tmp.driveupload/7547
+  ?? .tmp.driveupload/7549
+  ?? .tmp.driveupload/7551
+  ?? .tmp.driveupload/7553
+  ?? .tmp.driveupload/7555
+  ?? .tmp.driveupload/7557
+  ?? .tmp.driveupload/7559
+  ?? .tmp.driveupload/7561
+  ?? .tmp.driveupload/7563
+  ?? .tmp.driveupload/7565
+  ?? .tmp.driveupload/7567
+  ?? .tmp.driveupload/7569
+  ?? .tmp.driveupload/7571
+  ?? .tmp.driveupload/7573
+  ?? .tmp.driveupload/7575
+  ?? .tmp.driveupload/7577
+  ?? .tmp.driveupload/7579
+  ?? .tmp.driveupload/7581
+  ?? .tmp.driveupload/7583
+  ?? .tmp.driveupload/7585
+  ?? .tmp.driveupload/7587
+  ?? .tmp.driveupload/7589
+  ?? resonance_test_audio/
+  ?? src/effector/resonance/
+  ?? tests/test_resonance_listen.py
+  ?? tests/test_resonance_sweep.py
 
 Project topology:
   aggregate.py
@@ -435,6 +404,19 @@ Project topology:
   rescue_foley.py
   research/
     sweeps/
+  resonance_test_audio/
+    announce_consensus.wav
+    announce_escalation.wav
+    announce_inhibition.wav
+    announce_offering_accepted.wav
+    announce_offering_rejected.wav
+    announce_round_start.wav
+    manifest.txt
+    voice_arbiter_verdict.wav
+    voice_mistral_reasoning.wav
+    voice_nemotron_escalation.wav
+    voice_spark_evaluation.wav
+    voice_weave_proposal.wav
   results/
   src/
     effector/
@@ -448,8 +430,9 @@ Project topology:
     test_intention_layer.py
     test_multi_agent_debate.py
     test_reflex_middleware.py
+    test_resonance_listen.py
+    test_resonance_sweep.py
     test_signal_engine.py
-    test_tier2_escalation.py
   train_intention_layer.py
   verify_foley.py
 
@@ -10114,6 +10097,21 @@ FILE: src/effector/reflex_engine.py
 [SKIPPED — src/effector/reflex_engine.py would exceed zone token budget]
 
 ─────────────────────────────────────────────────────────────────
+FILE: src/effector/resonance/__init__.py
+─────────────────────────────────────────────────────────────────
+[SKIPPED — src/effector/resonance/__init__.py would exceed zone token budget]
+
+─────────────────────────────────────────────────────────────────
+FILE: src/effector/resonance/resonance_voice.py
+─────────────────────────────────────────────────────────────────
+[SKIPPED — src/effector/resonance/resonance_voice.py would exceed zone token budget]
+
+─────────────────────────────────────────────────────────────────
+FILE: src/effector/resonance/resonance_world.py
+─────────────────────────────────────────────────────────────────
+[SKIPPED — src/effector/resonance/resonance_world.py would exceed zone token budget]
+
+─────────────────────────────────────────────────────────────────
 FILE: src/effector/schemas/__init__.py
 ─────────────────────────────────────────────────────────────────
 
@@ -10164,8 +10162,30 @@ FILE: main_loop.py
 """
 Effector Engine — Main Reasoning Loop
 ======================================
-Integrates Substrate Telemetry, Asymmetric DASP, Reflex Caching, and IEP.
-Now featuring a Rich Live Dashboard and Foley Ambient Audio.
+Integrates Substrate Telemetry, Asymmetric DASP, Reflex Caching, IEP,
+Foley Ambient Audio, and the Resonance Layer.
+
+Resonance Layer additions
+--------------------------
+Phase 1 — The Rehearsal Room (ResonanceVoice / Kokoro-82M)
+    Agents speak their reasoning aloud during DASP deliberation.
+    The player hears the Acolytes passionately debating desktop thermodynamics.
+
+Phase 2 — The Rite of Offering (existing IEP Queue UI)
+    The debate concludes. The Rich UI displays the Intention Envelope.
+    The agents have fallen silent. The petition is on the altar.
+
+Phase 3 — The Sacred Interval (ResonanceWorld / AudioLDM 2)
+    The player clicks ACK (or the Reflex cache approves). The UI locks into
+    the Sacred Interval display, showing diffusion step progress. The OS
+    action is HELD until the audio generation completes. The 30-second wait
+    is the physics of miracle-work, made visible.
+
+Phase 4 — Manifestation or The Void
+    ACK: The generated audio plays. At that exact millisecond, the OS
+         action executes. Reality changes.
+    NACK: Nothing. The speakers stay dead. The desktop stays messy. The
+          agents will notice in the next polling cycle.
 """
 
 from __future__ import annotations
@@ -10173,61 +10193,126 @@ import argparse
 import sys
 import time
 import threading
+import queue as _queue
 from datetime import datetime, timezone
 from pathlib import Path
 from collections import deque
+from typing import Any, Optional
 
 import requests
 import subprocess
 
-# ── Rich Imports for Live UI ──
+# ── Rich imports ──────────────────────────────────────────────────────────────
 from rich.console import Console
 from rich.live import Live
 from rich.layout import Layout
 from rich.panel import Panel
 from rich.text import Text
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
 console = Console()
 
-# ─── Thread-Safe UI State ───────────────────────────────────────────────────
+# ─── Thread-safe UI state ─────────────────────────────────────────────────────
 ui_lock = threading.Lock()
-ui_telemetry_text = "Waiting for telemetry..."
-ui_dasp_status = "IDLE"
-ui_manifold_text = "No active debate."
-ui_logs = deque(maxlen=15)
+ui_telemetry_text: str = "Waiting for telemetry..."
+ui_dasp_status:    str = "IDLE"
+ui_manifold_text:  str = "No active debate."
+ui_logs: deque = deque(maxlen=18)
 
-def push_log(msg: str, style: str = "dim"):
+# Sacred Interval state (set by ResonanceWorld on_progress callback)
+ui_sacred_active:  bool = False
+ui_sacred_text:    str = ""
+ui_sacred_prompt:  str = ""
+ui_sacred_step:    int = 0
+ui_sacred_total:   int = 50
+
+def push_log(msg: str, style: str = "dim") -> None:
     ts = datetime.now().strftime("%H:%M:%S")
     with ui_lock:
         ui_logs.append(f"[{style}][{ts}] {msg}[/]")
 
-def update_ui_layout(layout: Layout):
+def update_ui_layout(layout: Layout) -> None:
+    """Repaint all three panels from global state. Thread-safe via ui_lock."""
     with ui_lock:
-        layout["telemetry"].update(Panel(ui_telemetry_text, title="[cyan]A1: Telemetry Snapshot", border_style="cyan"))
-        
-        main_dasp_content = f"[bold yellow]Status:[/bold yellow] {ui_dasp_status}\n\n{ui_manifold_text}"
-        layout["dasp"].update(Panel(main_dasp_content, title="[magenta]A2: DASP Signal Manifold", border_style="magenta"))
-        
-        log_content = "\n".join(ui_logs)
-        layout["queue"].update(Panel(log_content, title="[green]A3: IEP Queue & Logs", border_style="green"))
+        _update_telemetry(layout)
+        _update_dasp_or_sacred(layout)
+        _update_queue(layout)
+
+def _update_telemetry(layout: Layout) -> None:
+    layout["telemetry"].update(
+        Panel(
+            ui_telemetry_text,
+            title="[cyan]A1: Telemetry Snapshot[/cyan]",
+            border_style="cyan",
+        )
+    )
+
+def _update_dasp_or_sacred(layout: Layout) -> None:
+    if ui_sacred_active:
+        # The Sacred Interval takes over the DASP panel
+        filled  = int(20 * ui_sacred_step / max(ui_sacred_total, 1))
+        bar     = "█" * filled + "░" * (20 - filled)
+        content = (
+            f"[bold gold1]⚖️  THE EFFECTOR WEIGHS THE OFFERING[/bold gold1]\n\n"
+            f"{ui_sacred_text}\n\n"
+            f"[dim]{ui_sacred_prompt[:80]}[/dim]"
+        )
+        layout["dasp"].update(
+            Panel(
+                content,
+                title="[gold1]✦ The Sacred Interval[/gold1]",
+                border_style="gold1",
+            )
+        )
+    else:
+        content = f"[bold yellow]Status:[/bold yellow] {ui_dasp_status}\n\n{ui_manifold_text}"
+        layout["dasp"].update(
+            Panel(
+                content,
+                title="[magenta]A2: DASP Signal Manifold[/magenta]",
+                border_style="magenta",
+            )
+        )
+
+def _update_queue(layout: Layout) -> None:
+    log_content = "\n".join(ui_logs)
+    layout["queue"].update(
+        Panel(
+            log_content,
+            title="[green]A3: IEP Queue & Logs[/green]",
+            border_style="green",
+        )
+    )
 
 def create_layout() -> Layout:
     layout = Layout()
     layout.split_column(
         Layout(name="header", size=3),
-        Layout(name="main", ratio=1)
+        Layout(name="main", ratio=1),
     )
     layout["main"].split_row(
         Layout(name="telemetry", ratio=1),
-        Layout(name="dasp", ratio=2),
-        Layout(name="queue", ratio=2)
+        Layout(name="dasp",      ratio=2),
+        Layout(name="queue",     ratio=2),
     )
-    layout["header"].update(Panel("[bold cyan]EFFECTOR ENGINE[/bold cyan] — Headless Reasoning Loop", style="bold white on dark_blue"))
+    layout["header"].update(
+        Panel(
+            "[bold cyan]EFFECTOR ENGINE[/bold cyan]"
+            " — Headless Reasoning Loop  [dim]| The Agents Are Watching[/dim]",
+            style="bold white on dark_blue",
+        )
+    )
     return layout
 
-# ─── Bootstrapper ───────────────────────────────────────────────────────────
-def verify_models(allow_auto_pull: bool = True):
-    required = ["mistral:7b", "qwen2.5:14b", "qwen2.5-coder:32b", "nomic-embed-text"]
+# ─── Model bootstrapper ───────────────────────────────────────────────────────
+
+def verify_models(allow_auto_pull: bool = True) -> None:
+    required = [
+        "mistral:7b",
+        "qwen2.5:14b",
+        "qwen2.5-coder:32b",
+        "nomic-embed-text",
+    ]
     try:
         resp = requests.get("http://127.0.0.1:11434/api/tags", timeout=3)
         installed = [m["name"] for m in resp.json().get("models", [])]
@@ -10237,165 +10322,458 @@ def verify_models(allow_auto_pull: bool = True):
                     with console.status(f"[bold yellow]Pulling missing model: {req}..."):
                         subprocess.run(["ollama", "pull", req], check=True)
                 else:
-                    console.print(f"[bold red]Missing required model: {req}. Run 'effector models pull {req}'.")
+                    console.print(
+                        f"[bold red]Missing required model: {req}. "
+                        f"Run 'effector models pull {req}'."
+                    )
                     sys.exit(1)
     except requests.exceptions.ConnectionError:
-        console.print("[bold red]Ollama is not running. Please start Ollama at 127.0.0.1:11434")
+        console.print(
+            "[bold red]Ollama is not running. "
+            "Please start Ollama at 127.0.0.1:11434"
+        )
         sys.exit(1)
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
+
 try:
-    from effector.telemetry.poller import TelemetryPoller
+    from effector.telemetry.poller    import TelemetryPoller
     from effector.telemetry.state_keys import KEYS
-    from effector.adapters.asymmetric_dasp import AsymmetricDASPCoordinator, TierConfig
-    from effector.queue.iep_queue import EnvelopeQueue, IEPBuilder, IEPValidator
-    from effector.bus import StateBus
-    from effector.rat_store import LocalRATStore
-    from effector.main_loop_reflex import ReflexOrchestrator
-    
-    # Foley Integration Imports
-    from effector.foley import create_foley_system
-    from effector.foley.integration import wire_foley_to_main_loop
+    from effector.adapters.asymmetric_dasp import (
+        AsymmetricDASPCoordinator,
+        TierConfig,
+    )
+    from effector.queue.iep_queue     import EnvelopeQueue, IEPBuilder, IEPValidator
+    from effector.bus                 import StateBus
+    from effector.rat_store           import LocalRATStore
+    from effector.main_loop_reflex    import ReflexOrchestrator
+    from effector.executor            import LocalExecutor
+    from effector.foley               import create_foley_system
+    from effector.foley.integration   import wire_foley_to_main_loop
 except ImportError as e:
     print(f"[ERROR] Import failed: {e}")
     sys.exit(1)
 
-# ─── DASP UI Hook ───────────────────────────────────────────────────────────
-def _make_dasp_event_handler():
+# Resonance Layer — optional; degrade gracefully if not installed
+try:
+    from effector.resonance import ResonanceVoice, ResonanceWorld
+    _RESONANCE_AVAILABLE = True
+except ImportError:
+    _RESONANCE_AVAILABLE = False
+    print(
+        "[ResonanceLayer] resonance module not found. "
+        "Place src/effector/resonance/ in your project to enable voices and world sounds."
+    )
+
+# ─── DASP event handler (with optional voice) ─────────────────────────────────
+
+def _make_dasp_event_handler(
+    voice: Optional["ResonanceVoice"] = None,
+) -> Any:
+    """
+    Returns an on_event(event, data) callback wired to the display layer
+    and optionally to the ResonanceVoice for agent speech.
+    """
     def on_event(event: str, data: dict) -> None:
         global ui_dasp_status, ui_manifold_text
+
         with ui_lock:
             if event == "round_started":
-                ui_dasp_status = f"Round {data['round']} ({data.get('tier', 'local')})"
-                push_log(f"DASP: Round {data['round']} started.", "cyan")
+                ui_dasp_status = (
+                    f"Round {data['round']} ({data.get('tier', 'local')})"
+                )
+                push_log(
+                    f"DASP: Round {data['round']} started.", "cyan"
+                )
+                # Announce round number via TTS
+                if voice and voice.is_available():
+                    voice.announce("round_started", data.get("round", 0))
+
             elif event == "round_complete":
+                # ── Update signal manifold display ─────────────────────────────
                 lines = []
                 for hid, acc in data.get("accumulators", {}).items():
-                    net = acc['S_net']
+                    net   = acc["S_net"]
                     color = "green" if net > 0.5 else ("yellow" if net > 0 else "red")
-                    lines.append(f"[{color}][{hid[:10]}] S_g:{acc['S_g']:.2f} | S_i:{acc['S_i']:.2f} | Net:{net:.2f}[/]")
+                    lines.append(
+                        f"[{color}][{hid[:10]}] "
+                        f"S_g:{acc['S_g']:.2f} | "
+                        f"S_i:{acc['S_i']:.2f} | "
+                        f"Net:{net:.2f}[/]"
+                    )
                 ui_manifold_text = "\n".join(lines)
+
+                # ── Speak agent explanations ───────────────────────────────────
+                if voice and voice.is_available():
+                    for resp in data.get("responses", []):
+                        explanation = resp.get("explanation", "")
+                        agent_id    = resp.get("agent_id", "default")
+                        if explanation and "(abstention)" not in explanation.lower():
+                            voice.speak(explanation, agent_id=agent_id)
+
             elif event == "escalation_triggered":
-                ui_dasp_status = f"[bold red]ESCALATION: {data.get('trigger')} gate fired[/]"
-                push_log("DASP Escalating to Tier-2...", "yellow")
+                trigger = data.get("trigger", "")
+                ui_dasp_status = (
+                    f"[bold red]ESCALATION: {trigger} gate fired[/]"
+                )
+                push_log("DASP: Escalating to Tier-2...", "yellow")
+                if voice and voice.is_available():
+                    if trigger == "inhibition":
+                        voice.announce("inhibition")
+                    else:
+                        voice.announce("escalation")
+
             elif event == "consensus_cleared":
-                ui_dasp_status = f"[bold green]CONSENSUS REACHED (Score: {data.get('consensus_score', 0):.2f})[/]"
+                score = data.get("consensus_score", 0)
+                ui_dasp_status = (
+                    f"[bold green]CONSENSUS REACHED (Score: {score:.2f})[/]"
+                )
+                if voice and voice.is_available():
+                    voice.announce("consensus")
+
     return on_event
 
-# ─── Queue Consumer ─────────────────────────────────────────────────────────
-def _consume_queue(eq: EnvelopeQueue, stop: threading.Event, executor: Any) -> None:
+# ─── Sacred Interval progress callback ────────────────────────────────────────
+
+def _make_sacred_interval_progress(layout: Layout) -> Any:
+    """
+    Returns a callback(step, total, text) that updates the Sacred Interval
+    UI in real time during AudioLDM 2 diffusion.
+    """
+    def on_progress(step: int, total: int, text: str) -> None:
+        global ui_sacred_active, ui_sacred_text, ui_sacred_step, ui_sacred_total
+
+        with ui_lock:
+            ui_sacred_active = step < total or (step == 0 and total > 0)
+            ui_sacred_text   = text
+            ui_sacred_step   = step
+            ui_sacred_total  = total if total > 0 else 50
+
+        # Update the layout immediately so the Live widget picks it up
+        try:
+            _update_dasp_or_sacred(layout)
+            _update_queue(layout)
+        except Exception:
+            pass
+
+    return on_progress
+
+# ─── IEP Queue consumer with Sacred Interval ──────────────────────────────────
+
+def _consume_queue(
+    eq: EnvelopeQueue,
+    stop: threading.Event,
+    executor: Any,
+    world: Optional["ResonanceWorld"] = None,
+    voice: Optional["ResonanceVoice"] = None,
+    layout: Optional[Layout] = None,
+) -> None:
+    """
+    IEP queue consumer.
+
+    ACK path  — Sacred Interval (generate audio) → play → execute OS action.
+    NACK path — Silence. The void. The agents notice next cycle.
+    """
+    global ui_sacred_active, ui_sacred_text
+
     while not stop.is_set():
         try:
             item = eq.get(timeout=1.0)
-            status = item.validation.status
-            eid = item.envelope.get("envelope_id", "?")[:8]
-            verb = item.envelope.get("intended_action", {}).get("verb", "?")
-            if item.is_ack():
-                push_log(f"IEP: [green]ACK[/] {eid} ({verb})", "green")
-                # ACTUAL EXECUTION
-                push_log(f"Executing {eid}...", "yellow")
-                executor.execute(item.envelope)
-            else:
-                push_log(f"IEP: [red]NACK[/] {eid} - {item.validation.failure_reason}", "red")
-        except:
+        except _queue.Empty:
+            continue
+        except Exception:
             continue
 
-# ─── Main Loop ──────────────────────────────────────────────────────────────
-def run_loop(poll_interval_s: float, debate_interval_s: float, max_cycles: int, queue_file: str):
-    from effector.executor import LocalExecutor
-    
+        eid    = item.envelope.get("envelope_id", "?")[:8]
+        verb   = item.envelope.get("intended_action", {}).get("verb",   "?")
+        target = item.envelope.get("intended_action", {}).get("target", "world_state")
+
+        if item.is_ack():
+            # ── Phase 2 → 3: Rite of Offering accepted ────────────────────────
+            push_log(
+                f"IEP: [green]ACK[/] {eid} ({verb}) — "
+                f"[italic]The Offering is accepted[/italic]",
+                "green",
+            )
+
+            # ── Phase 3: The Sacred Interval ───────────────────────────────────
+            if world and world.is_available():
+                push_log(
+                    f"⚖️  [gold1]The Sacred Interval begins — "
+                    f"The Effector generates: {target}[/]",
+                    "gold1",
+                )
+
+                with ui_lock:
+                    ui_sacred_active = True
+                    ui_sacred_text   = f"⚖️  Preparing the manifestation for: {target}"
+                    ui_sacred_step   = 0
+
+                if layout is not None:
+                    _update_dasp_or_sacred(layout)
+
+                # BLOCKING: generates audio (30-45s on CPU, 15-25s on GPU)
+                audio_path = world.generate_and_play(target)
+
+                with ui_lock:
+                    ui_sacred_active = False
+                    ui_sacred_text   = ""
+
+                if layout is not None:
+                    try:
+                        _update_dasp_or_sacred(layout)
+                    except Exception:
+                        pass
+
+                if audio_path:
+                    push_log(
+                        f"✦ [bold gold1]Manifestation complete.[/] "
+                        f"The miracle has a sound.",
+                        "bold",
+                    )
+                else:
+                    push_log(
+                        "✦ [dim](World sound unavailable — "
+                        "manifesting in silence)[/dim]",
+                        "dim",
+                    )
+            else:
+                push_log(
+                    f"✦ [dim]World sound not loaded — "
+                    f"manifesting in silence.[/dim]",
+                    "dim",
+                )
+
+            # ── Phase 4: Manifestation — execute the OS action ─────────────────
+            push_log(f"Executing {eid} → {target}...", "yellow")
+            try:
+                executor.execute(item.envelope)
+                push_log(
+                    f"✦ [green bold]Reality altered.[/green bold] "
+                    f"The agents will see the change.",
+                    "bold green",
+                )
+                if voice and voice.is_available():
+                    voice.announce("offering_accepted")
+            except Exception as exc:
+                push_log(f"[red]Execution error: {exc}[/red]", "red")
+
+        else:
+            # ── Phase 4: The Void — NACK ────────────────────────────────────────
+            # No audio. No execution. The speakers stay dead.
+            reason = item.validation.failure_reason or "unknown"
+            push_log(
+                f"IEP: [red]NACK[/] {eid} — "
+                f"[italic]The Offering dissolves into the void[/italic]",
+                "red",
+            )
+            push_log(
+                f"[dim]Reason: {reason}. "
+                f"The desktop remains unchanged. "
+                f"The agents will notice.[/dim]",
+                "dim",
+            )
+            if voice and voice.is_available():
+                voice.announce("offering_rejected")
+
+# ─── Main Loop ────────────────────────────────────────────────────────────────
+
+def run_loop(
+    poll_interval_s: float = 5.0,
+    debate_interval_s: float = 30.0,
+    max_cycles: int = 0,
+    queue_file: str = "iep_queue.jsonl",
+    voice_enabled: bool = True,
+    world_enabled: bool = True,
+) -> None:
+
     verify_models()
-    
-    bus = StateBus()
+
+    # ── Substrate ─────────────────────────────────────────────────────────────
+    bus    = StateBus()
     poller = TelemetryPoller(bus, interval_s=poll_interval_s)
     poller.start()
     time.sleep(poll_interval_s + 0.5)
 
+    # ── DASP Coordinator ──────────────────────────────────────────────────────
     tier1 = [
-        TierConfig(name="mistral", model="mistral:7b", characterizer_model="qwen2.5-coder:32b", max_rounds=2),
-        TierConfig(name="qwen", model="qwen2.5:14b", characterizer_model="qwen2.5-coder:32b", max_rounds=2)
+        TierConfig(
+            name="mistral",
+            model="mistral:7b",
+            characterizer_model="qwen2.5-coder:32b",
+            max_rounds=2,
+        ),
+        TierConfig(
+            name="qwen",
+            model="qwen2.5:14b",
+            characterizer_model="qwen2.5-coder:32b",
+            max_rounds=2,
+        ),
     ]
-    tier2 = TierConfig(name="nemotron", model="qwen2.5:14b", characterizer_model="qwen2.5-coder:32b", max_rounds=1)
-
-    coordinator = AsymmetricDASPCoordinator(
-        tier1_agents=tier1, tier2_agent=tier2,
-        tau_suppression=0.5, theta_consensus=0.65, epsilon_stall=0.04,
-        vectorized_bus=True
+    tier2 = TierConfig(
+        name="nemotron",
+        model="qwen2.5:14b",
+        characterizer_model="qwen2.5-coder:32b",
+        max_rounds=1,
     )
-    coordinator._on_event = _make_dasp_event_handler()
+    coordinator = AsymmetricDASPCoordinator(
+        tier1_agents=tier1,
+        tier2_agent=tier2,
+        tau_suppression=0.5,
+        theta_consensus=0.65,
+        epsilon_stall=0.04,
+        vectorized_bus=True,
+    )
 
-    rat_store = LocalRATStore()
-    orchestrator = ReflexOrchestrator(state_bus=bus, rat_store=rat_store, dasp_run_fn=coordinator.run)
+    # ── Reflex middleware ─────────────────────────────────────────────────────
+    rat_store    = LocalRATStore()
+    orchestrator = ReflexOrchestrator(
+        state_bus=bus,
+        rat_store=rat_store,
+        dasp_run_fn=coordinator.run,
+    )
 
-    push_log("Initializing Foley ambient audio system...")
+    # ── Foley ambient audio ───────────────────────────────────────────────────
+    push_log("Initialising Foley ambient audio...")
     player, mapper, scheduler = create_foley_system(bus)
-    wires = wire_foley_to_main_loop(coordinator, orchestrator, bus, mapper, player)
+    wire_foley_to_main_loop(coordinator, orchestrator, bus, mapper, player)
 
+    # ── IEP pipeline ──────────────────────────────────────────────────────────
     validator = IEPValidator(state_bus=bus)
-    eq = EnvelopeQueue(persist_path=queue_file)
+    eq        = EnvelopeQueue(persist_path=queue_file)
+    executor  = LocalExecutor(state_bus=bus, foley_mapper=mapper)
 
-    executor = LocalExecutor(state_bus=bus, foley_mapper=mapper)
-    stop_consumer = threading.Event()
-    threading.Thread(target=_consume_queue, args=(eq, stop_consumer, executor), daemon=True).start()
+    # ── Resonance Layer ───────────────────────────────────────────────────────
+    voice: Optional[ResonanceVoice] = None
+    world: Optional[ResonanceWorld] = None
 
+    if _RESONANCE_AVAILABLE:
+        layout_ref: list[Optional[Layout]] = [None]  # forward ref for closure
+
+        def _on_sacred_progress(step: int, total: int, text: str) -> None:
+            global ui_sacred_active, ui_sacred_text, ui_sacred_step, ui_sacred_total
+            with ui_lock:
+                ui_sacred_active = step < total or (step == 0 and total > 0)
+                ui_sacred_text   = text
+                ui_sacred_step   = step
+                ui_sacred_total  = total if total > 0 else 50
+            
+        voice = ResonanceVoice(enabled=voice_enabled)
+        world = ResonanceWorld(
+            enabled=world_enabled,
+            on_progress=_on_sacred_progress,
+        )
+
+        push_log("Starting Resonance Layer (Kokoro + AudioLDM 2)...")
+        voice.start()
+        world.start()
+
+        # Non-blocking — the loop starts while models load in background.
+        # Voices become available once Kokoro loads (~3-10s).
+        # World sounds become available once AudioLDM 2 loads (~30-120s
+        # or download time on first run).
+    else:
+        push_log(
+            "[dim]Resonance Layer not available — "
+            "no voices, no world sounds.[/dim]",
+            "dim",
+        )
+        layout_ref = [None]
+
+    # ── Wire voice into DASP coordinator ─────────────────────────────────────
+    coordinator._on_event = _make_dasp_event_handler(voice=voice)
+
+    # ── Layout ────────────────────────────────────────────────────────────────
     layout = create_layout()
-    cycle = 0
+    if _RESONANCE_AVAILABLE and layout_ref is not None:
+        layout_ref[0] = layout  # inject into sacred interval callback closure
 
-    with Live(layout, refresh_per_second=4, screen=True):
+    # ── Queue consumer thread ─────────────────────────────────────────────────
+    stop_consumer = threading.Event()
+    consumer_thread = threading.Thread(
+        target=_consume_queue,
+        args=(eq, stop_consumer, executor),
+        kwargs={"world": world, "voice": voice, "layout": layout},
+        name="IEPQueueConsumer",
+        daemon=True,
+    )
+    consumer_thread.start()
+
+    # ── Main loop ─────────────────────────────────────────────────────────────
+    cycle = 0
+    with Live(layout, refresh_per_second=1, screen=True):
         try:
             while True:
                 cycle += 1
                 state = bus.read()
                 snap_hash, snap_ts, _ = bus.snapshot()
 
-                cpu = state.get(KEYS.cpu_percent_total, 0.0)
-                ram = state.get(KEYS.ram_percent, 0.0)
+                cpu      = state.get(KEYS.cpu_percent_total, 0.0)
+                ram      = state.get(KEYS.ram_percent, 0.0)
                 pressure = state.get(KEYS.system_pressure, 0.0)
-                window = state.get(KEYS.active_window_title, "(unknown)")
-                proc = state.get(KEYS.active_process_name, "(unknown)")
+                window   = state.get(KEYS.active_window_title, "(unknown)")
+                proc     = state.get(KEYS.active_process_name, "(unknown)")
 
-                global ui_telemetry_text, ui_dasp_status, ui_manifold_text
+                # ── Update telemetry panel ─────────────────────────────────────
+                global ui_dasp_status
                 with ui_lock:
-                    ui_telemetry_text = f"Cycle: {cycle}\n\nCPU: {cpu:.1f}%\nRAM: {ram:.1f}%\nPressure: {pressure:.3f}\n\nWindow: {window}\nProcess: {proc}"
+                    global ui_telemetry_text
+                    ui_telemetry_text = (
+                        f"Cycle: {cycle}\n\n"
+                        f"CPU: {cpu:.1f}%\n"
+                        f"RAM: {ram:.1f}%\n"
+                        f"Pressure: {pressure:.3f}\n\n"
+                        f"Window: {window}\n"
+                        f"Process: {proc}"
+                    )
                     ui_dasp_status = "Evaluating telemetry..."
+
                 update_ui_layout(layout)
 
-                # Adjusted the task to provoke an action!
+                # ── Build task for this cycle ──────────────────────────────────
                 task = (
-                    f"Analyse system health. CPU={cpu:.1f}%, RAM={ram:.1f}%, pressure={pressure:.3f}, "
-                    f"window='{window}'. If the desktop is messy or the user looks stressed, "
-                    f"propose organizing the desktop files."
+                    f"Analyse system health and habitat cozy-ness. "
+                    f"CPU={cpu:.1f}%, RAM={ram:.1f}%, pressure={pressure:.3f}, "
+                    f"window='{window}'. "
+                    f"If the desktop is messy or the user looks stressed, "
+                    f"propose organizing the desktop files into a Zen Habitat."
                 )
 
-                push_log("Orchestrator checking Reflex Cache...")
+                push_log("Checking Reflex Cache...")
                 result = orchestrator.handle(task=task, snapshot_hash=snap_hash)
 
                 if result.get("_path") == "reflex":
-                    push_log(f"⚡ Reflex Cache Hit! Status: {result.get('status')}", "yellow")
+                    push_log(
+                        f"⚡ Reflex hit — {result.get('status')} "
+                        f"(RAT: {str(result.get('rat_id', ''))[:8]})",
+                        "yellow",
+                    )
                     with ui_lock:
-                        ui_dasp_status = f"[yellow]Reflex Executed[/] (RAT: {result.get('rat_id', '')[:8]})"
-                        ui_manifold_text = "Bypassed LLM Debate."
+                        ui_dasp_status = (
+                            f"[yellow]Reflex Executed[/] "
+                            f"(RAT: {str(result.get('rat_id', ''))[:8]})"
+                        )
+                        ui_manifold_text = "Bypassed LLM deliberation."
                 else:
-                    push_log("DASP Debate Complete.", "white")
+                    push_log("DASP debate complete.", "white")
 
+                # ── Build and validate IEP envelope ───────────────────────────
                 emit_hash, _, _ = bus.snapshot()
                 envelope = IEPBuilder.from_debate_result(
-                    debate_result=result, 
+                    debate_result=result,
                     state_bus_snapshot_hash=emit_hash,
-                    keys_affected=[KEYS.system_pressure]
+                    keys_affected=[KEYS.system_pressure],
                 )
-
                 verdict = validator.validate(envelope)
                 eq.put(envelope, verdict)
 
                 with ui_lock:
                     ui_dasp_status = "Sleeping..."
                 update_ui_layout(layout)
-                
+
                 if max_cycles and cycle >= max_cycles:
                     break
-                
-                # Reverted back to the stable sleep
+
                 time.sleep(debate_interval_s)
 
         except KeyboardInterrupt:
@@ -10403,19 +10781,43 @@ def run_loop(poll_interval_s: float, debate_interval_s: float, max_cycles: int, 
         finally:
             poller.stop()
             stop_consumer.set()
+            consumer_thread.join(timeout=5.0)
             rat_store.close()
-            if 'player' in locals():
+            if voice:
+                voice.stop()
+            # AudioLDM 2 pipeline has no explicit close; GC handles it
+            if "player" in dir():
                 player.shutdown()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--poll-interval", type=float, default=5.0)
-    parser.add_argument("--debate-interval", type=float, default=30.0)
-    parser.add_argument("--max-cycles", type=int, default=0)
-    parser.add_argument("--queue-file", type=str, default="iep_queue.jsonl")
+    parser = argparse.ArgumentParser(
+        description="Effector Engine — Headless Reasoning Loop"
+    )
+    parser.add_argument("--poll-interval",    type=float, default=5.0)
+    parser.add_argument("--debate-interval",  type=float, default=30.0)
+    parser.add_argument("--max-cycles",       type=int,   default=0)
+    parser.add_argument("--queue-file",       type=str,   default="iep_queue.jsonl")
+    parser.add_argument(
+        "--no-voice",
+        action="store_true",
+        help="Disable Kokoro TTS agent voices",
+    )
+    parser.add_argument(
+        "--no-world",
+        action="store_true",
+        help="Disable AudioLDM 2 world sound generation (Sacred Interval)",
+    )
     args = parser.parse_args()
 
-    run_loop(args.poll_interval, args.debate_interval, args.max_cycles, args.queue_file)
+    run_loop(
+        poll_interval_s=args.poll_interval,
+        debate_interval_s=args.debate_interval,
+        max_cycles=args.max_cycles,
+        queue_file=args.queue_file,
+        voice_enabled=not args.no_voice,
+        world_enabled=not args.no_world,
+    )
+
 
 ─────────────────────────────────────────────────────────────────
 FILE: mcp/registry_mcp.py
@@ -13936,6 +14338,16 @@ FILE: tests/test_reflex_middleware.py
 [SKIPPED — tests/test_reflex_middleware.py would exceed zone token budget]
 
 ─────────────────────────────────────────────────────────────────
+FILE: tests/test_resonance_listen.py
+─────────────────────────────────────────────────────────────────
+[SKIPPED — tests/test_resonance_listen.py would exceed zone token budget]
+
+─────────────────────────────────────────────────────────────────
+FILE: tests/test_resonance_sweep.py
+─────────────────────────────────────────────────────────────────
+[SKIPPED — tests/test_resonance_sweep.py would exceed zone token budget]
+
+─────────────────────────────────────────────────────────────────
 FILE: tests/test_signal_engine.py
 ─────────────────────────────────────────────────────────────────
 """
@@ -16499,9 +16911,9 @@ if __name__ == "__main__":
 =================================================================
   CONTEXT FOOTER
   Profile:        full
-  Tokens:         ~154,735
+  Tokens:         ~158,318
   Budget:         500,000
   Strip dividers: True
   Zones:          16 active
-  Built:          2026-04-05 15:52:44
+  Built:          2026-04-07 13:44:53
 =================================================================
