@@ -1,0 +1,687 @@
+"""
+A2: Asymmetric DASP Coordinator
+================================
+Tiered debate architecture:
+
+    Tier 1 (Local, fast):  mistral + qwen2.5-coder
+    Tier 2 (Cloud, heavy): nemotron (via Ollama remote / API)
+
+Escalation logic
+----------------
+Tier-2 agents are ONLY instantiated when local agents deadlock:
+  • Stall Gate fires  (|ΔS_net| < ε_stall for all hypotheses)
+  • Inhibition Gate fires (S_i ≥ τ · S_g — hard veto without consensus)
+  • max_local_rounds exceeded without P3 clearance
+
+On escalation, the Tier-2 agent is injected as an arbiter for one
+additional round, whose signal is reputation-weighted at 1.0 (full
+authority). The coordinator then re-evaluates all gates.
+
+IEP-A3 extension
+----------------
+When vectorized_bus=True (and an embedding model is reachable), the
+coordinator generates a snapshot_vector immediately after capturing the
+SHA-256 snapshot hash. This vector is:
+
+  1. Stored in the debate result under "snapshot_vector".
+  2. Consumed downstream by IEPBuilder (M3) and IEPValidator (M4).
+
+The embedding call is synchronous but kept off the agent-dispatch hot
+path — it runs once per session, before any agent reasoning begins.
+Failure is non-fatal: the coordinator logs a warning and continues with
+hash-only mode (snapshot_vector=None in the result).
+
+The dumb substrate constraint (IEP-A3.1) is respected: the StateBus
+never touches the embedding API. All vector work happens here in the
+Orchestration Layer.
+"""
+
+from __future__ import annotations
+from effector.adapters.two_phase_adapter import two_phase_call
+import hashlib
+import json
+import math
+import time
+import uuid
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Callable
+
+import requests
+
+from effector.telemetry.state_keys import KEYS
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Tier definition
+# ─────────────────────────────────────────────────────────────────────────────
+
+@dataclass
+class TierConfig:
+    name: str
+    model: str
+    host: str = "http://127.0.0.1:11434"
+    temperature: float = 0.7
+    temperature_schedule: list[float] | None = None   # IEP-A3: per-round temps
+    characterizer_model: str | None = None
+    timeout_s: float = 60.0
+    max_rounds: int = 3          # rounds before escalating to next tier
+
+    def get_temperature(self, round_num: int) -> float:
+        """Return the temperature for a given 1-indexed round number."""
+        if self.temperature_schedule:
+            idx = min(round_num - 1, len(self.temperature_schedule) - 1)
+            return self.temperature_schedule[idx]
+        return self.temperature
+
+
+@dataclass
+class EscalationRecord:
+    triggered_at_round: int
+    trigger_type: str            # "stall" | "inhibition" | "timeout" | "max_rounds"
+    tier_from: str
+    tier_to: str
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Minimal signal tracking (independent of coordinator internals)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@dataclass
+class _HypothesisAccumulator:
+    S_g: float = 0.0
+    S_i: float = 0.0
+    prev_S_net: float = 0.0
+
+    @property
+    def S_net(self) -> float:
+        return self.S_g - self.S_i
+
+
+def _ingest(
+    responses: list[dict],
+    accumulators: dict[str, _HypothesisAccumulator],
+) -> None:
+    """Update accumulators from a round's response dicts."""
+    for h in accumulators.values():
+        h.prev_S_net = h.S_net
+        h.S_g = 0.0
+        h.S_i = 0.0
+
+    for resp in responses:
+        hid = resp.get("hypothesis_id", "H_default")
+        sig = resp.get("signal", {})
+        polarity = sig.get("polarity", 0)
+        confidence = float(sig.get("confidence", 0.5))
+        g_str = float(sig.get("generative_strength", confidence))
+        i_prs = float(sig.get("inhibitory_pressure", 0.0))
+
+        if hid not in accumulators:
+            accumulators[hid] = _HypothesisAccumulator()
+
+        acc = accumulators[hid]
+        if polarity >= 0:
+            acc.S_g += confidence * g_str
+        if polarity <= 0:
+            acc.S_i += confidence * i_prs
+
+
+def _stall_fired(
+    accumulators: dict[str, _HypothesisAccumulator],
+    epsilon_stall: float,
+) -> bool:
+    for acc in accumulators.values():
+        delta = abs(acc.S_net - acc.prev_S_net)
+        if acc.S_g > 0 and delta < epsilon_stall:
+            return True
+    return False
+
+
+def _inhibition_fired(
+    accumulators: dict[str, _HypothesisAccumulator],
+    tau_suppression: float,
+) -> bool:
+    for acc in accumulators.values():
+        if acc.S_g > 0 and acc.S_i >= tau_suppression * acc.S_g:
+            return True
+    return False
+
+
+def _consensus_cleared(
+    accumulators: dict[str, _HypothesisAccumulator],
+    theta_consensus: float,
+) -> tuple[bool, str | None, float]:
+    for hid, acc in accumulators.items():
+        if acc.S_net >= theta_consensus:
+            return True, hid, acc.S_net
+    return False, None, 0.0
+
+
+def _call_ollama(
+    agent_id: str,
+    model: str,
+    host: str,
+    session_id: str,
+    round_num: int,
+    task: str,
+    snapshot_hash: str,
+    others: list[dict],
+    temperature: float = 0.7,
+    timeout_s: float = 90.0,
+    characterizer_model: str | None = None,
+) -> dict | None:
+    return two_phase_call(
+        agent_id=agent_id,
+        model=model,
+        host=host,
+        session_id=session_id,
+        round_num=round_num,
+        task=task,
+        snapshot_hash=snapshot_hash,
+        others=others,
+        temperature=temperature,
+        timeout_s=timeout_s,
+        characterizer_model=characterizer_model,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# IEP-A3: Snapshot vectorization helpers
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _cosine_similarity(a: list[float], b: list[float]) -> float:
+    """
+    Pure-Python cosine similarity between two equal-length vectors.
+    Returns a value in [-1.0, 1.0].  Returns 0.0 on zero-magnitude input.
+    """
+    if len(a) != len(b):
+        raise ValueError(f"Vector length mismatch: {len(a)} vs {len(b)}")
+    dot = sum(x * y for x, y in zip(a, b))
+    mag_a = math.sqrt(sum(x * x for x in a))
+    mag_b = math.sqrt(sum(x * x for x in b))
+    if mag_a == 0.0 or mag_b == 0.0:
+        return 0.0
+    return dot / (mag_a * mag_b)
+
+
+def _get_snapshot_vector(
+    serialized_state: str,
+    embedding_model: str,
+    ollama_host: str,
+    timeout_s: float = 10.0,
+) -> list[float] | None:
+    """
+    Fetch a dense embedding for *serialized_state* from Ollama's /api/embed
+    endpoint.  Returns a list[float] on success, None on any failure.
+
+    The call is synchronous but deliberately kept short (timeout_s=10) so
+    that a slow or absent embedding model does not stall session startup.
+    Callers must treat None as "vector unavailable — fall back to hash mode".
+
+    Ollama /api/embed payload:
+        {"model": "<name>", "input": "<text>"}
+    Response:
+        {"embeddings": [[float, ...]], "model": "...", ...}
+    """
+    payload = {
+        "model": embedding_model,
+        "input": serialized_state,
+    }
+    try:
+        resp = requests.post(
+            f"{ollama_host}/api/embed",
+            json=payload,
+            timeout=timeout_s,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        embeddings = data.get("embeddings")
+        if not embeddings or not isinstance(embeddings[0], list):
+            print(f"[IEP-A3] Unexpected embed response shape from {ollama_host}: {data}")
+            return None
+        vec = embeddings[0]
+        if len(vec) < 256:
+            # Per A3.3: below 256 dimensions, fall back to hash mode
+            print(
+                f"[IEP-A3] Embedding dimensionality {len(vec)} < 256 minimum — "
+                "falling back to hash mode"
+            )
+            return None
+        return [float(v) for v in vec]
+    except requests.exceptions.ConnectionError:
+        print(f"[IEP-A3] Embedding model {embedding_model!r} unreachable at {ollama_host} — hash mode")
+        return None
+    except Exception as exc:
+        print(f"[IEP-A3] Embedding error: {exc} — hash mode")
+        return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Asymmetric Coordinator
+# ─────────────────────────────────────────────────────────────────────────────
+
+class AsymmetricDASPCoordinator:
+    """
+    Two-tier debate coordinator with optional IEP-A3 snapshot vectorization.
+
+    Tier-1 agents (local, fast) run for up to `tier1_config.max_rounds`.
+    Tier-2 agent (cloud arbiter) is injected only on deadlock.
+
+    Parameters
+    ----------
+    tier1_agents : list[TierConfig]
+        Local agent definitions (e.g. mistral, qwen).
+    tier2_agent : TierConfig
+        Cloud/large-model arbiter (e.g. nemotron).
+    tau_suppression : float
+        Inhibition gate threshold (S_i ≥ τ·S_g → fire).
+    theta_consensus : float
+        Consensus gate threshold (S_net ≥ θ → clear).
+    epsilon_stall : float
+        Stall gate threshold (|ΔS_net| < ε → stall).
+    on_event : Callable[[str, dict], None] | None
+        Optional event callback (event_name, data).
+    vectorized_bus : bool
+        If True, generate a snapshot_vector at session start via the
+        Ollama embedding API (IEP-A3).  Requires `embedding_model` to
+        be pulled locally or available at the Tier-1 host.
+    embedding_model : str
+        Ollama model name for embeddings.  Only used when vectorized_bus=True.
+        Defaults to "nomic-embed-text".
+    embedding_host : str | None
+        Ollama host for the embedding call.  Defaults to Tier-1[0].host.
+    rat_similarity_threshold : float
+        Minimum cosine similarity for a snapshot to be considered valid
+        under IEP-A3.  Stored in the result so the IEPValidator can read it.
+    """
+
+    def __init__(
+        self,
+        tier1_agents: list[TierConfig],
+        tier2_agent: TierConfig,
+        tau_suppression: float = 0.5,
+        theta_consensus: float = 0.7,
+        epsilon_stall: float = 0.05,
+        on_event: Callable[[str, dict[str, Any]], None] | None = None,
+        vectorized_bus: bool = False,
+        embedding_model: str = "nomic-embed-text",
+        embedding_host: str | None = None,
+        rat_similarity_threshold: float = 0.97,
+    ) -> None:
+        self._tier1 = tier1_agents
+        self._tier2 = tier2_agent
+        self.tau_suppression = tau_suppression
+        self.theta_consensus = theta_consensus
+        self.epsilon_stall = epsilon_stall
+        self._on_event = on_event or (lambda e, d: None)
+
+        # IEP-A3 fields
+        self.vectorized_bus = vectorized_bus
+        self.embedding_model = embedding_model
+        self.embedding_host = embedding_host or (
+            tier1_agents[0].host if tier1_agents else "http://127.0.0.1:11434"
+        )
+        self.rat_similarity_threshold = rat_similarity_threshold
+
+    # ── Public entry ─────────────────────────────────────────────────────
+
+    def run(
+        self,
+        task: str,
+        snapshot_hash: str,
+        state_bus: Any,
+    ) -> dict[str, Any]:
+        """
+        Run an asymmetric debate.  Returns a result dict compatible with
+        the base DebateResult contract (serialisable to JSON).
+
+        IEP-A3: When vectorized_bus=True the result additionally contains:
+            "snapshot_vector"            : list[float] | None
+            "vectorized_bus"             : bool
+            "rat_similarity_threshold"   : float
+            "embedding_model"            : str
+        """
+        session_id = str(uuid.uuid4())
+        all_rounds: list[dict] = []
+        escalation_records: list[EscalationRecord] = []
+        accumulators: dict[str, _HypothesisAccumulator] = {}
+        prev_responses: list[dict] = []
+        terminated_reason = "max_rounds"
+        round_num = 0
+        tier2_injected = False
+
+        # ── IEP-A3: Generate snapshot vector ─────────────────────────────
+        # The Coordinator serializes the bus state and calls the embedding
+        # model BEFORE dispatching any agent requests, so the vector reflects
+        # exactly the same world model that generated snapshot_hash.
+        # Per A3.1 (Dumb Substrate), the StateBus itself never touches the
+        # embedding API — all of that work is done here in the Orchestrator.
+        snapshot_vector: list[float] | None = None
+        if self.vectorized_bus:
+            serialized = state_bus.serialize()
+            snapshot_vector = _get_snapshot_vector(
+                serialized_state=serialized,
+                embedding_model=self.embedding_model,
+                ollama_host=self.embedding_host,
+            )
+            if snapshot_vector is None:
+                print(
+                    "[IEP-A3] Snapshot vector unavailable — session will use "
+                    "hash-only verification for this debate."
+                )
+
+        self._emit("session_started", {
+            "session_id": session_id,
+            "task": task[:120],
+            "tier1_agents": [t.model for t in self._tier1],
+            "tier2_agent": self._tier2.model,
+            "vectorized_bus": self.vectorized_bus,
+            "snapshot_vector_dim": len(snapshot_vector) if snapshot_vector else None,
+        })
+
+        # ── Tier-1 rounds ─────────────────────────────────────────────────
+        for local_round in range(1, self._tier1[0].max_rounds + 1):
+            round_num += 1
+            self._emit("round_started", {
+                "session_id": session_id, "round": round_num, "tier": "local"
+            })
+
+            others_summary = [
+                {
+                    "agent_id": r.get("agent_id"),
+                    "answer": r.get("answer", ""),
+                    "confidence": r.get("signal", {}).get("confidence", 0.5),
+                    "polarity": r.get("signal", {}).get("polarity", 0),
+                }
+                for r in prev_responses
+            ]
+
+            current_responses: list[dict] = []
+            for tier in self._tier1:
+                resp = _call_ollama(
+                    agent_id=tier.name,
+                    model=tier.model,
+                    host=tier.host,
+                    session_id=session_id,
+                    round_num=round_num,
+                    task=task,
+                    snapshot_hash=snapshot_hash,
+                    others=others_summary,
+                    temperature=tier.get_temperature(local_round),
+                    timeout_s=tier.timeout_s,
+                    characterizer_model=tier.characterizer_model,
+                )
+                if resp:
+                    current_responses.append(resp)
+                else:
+                    current_responses.append(
+                        self._abstention(tier.name, session_id, round_num, snapshot_hash)
+                    )
+
+            _ingest(current_responses, accumulators)
+
+            gate_event = {
+                "session_id": session_id,
+                "round": round_num,
+                "responses": current_responses,
+                "accumulators": {
+                    hid: {"S_g": acc.S_g, "S_i": acc.S_i, "S_net": acc.S_net}
+                    for hid, acc in accumulators.items()
+                },
+            }
+            all_rounds.append(gate_event)
+            self._emit("round_complete", gate_event)
+
+            stall = _stall_fired(accumulators, self.epsilon_stall)
+            inhibition = _inhibition_fired(accumulators, self.tau_suppression)
+            consensus, winning_hid, consensus_score = _consensus_cleared(
+                accumulators, self.theta_consensus
+            )
+
+            if consensus:
+                terminated_reason = "consensus"
+                self._emit("consensus_cleared", {
+                    "session_id": session_id,
+                    "round": round_num,
+                    "winning_hypothesis": winning_hid,
+                    "consensus_score": consensus_score,
+                })
+                prev_responses = current_responses
+                break
+
+            if stall or inhibition:
+                trigger = "stall" if stall else "inhibition"
+                self._emit("escalation_triggered", {
+                    "session_id": session_id,
+                    "round": round_num,
+                    "trigger": trigger,
+                    "tier_from": "local",
+                    "tier_to": self._tier2.model,
+                })
+                escalation_records.append(EscalationRecord(
+                    triggered_at_round=round_num,
+                    trigger_type=trigger,
+                    tier_from="local",
+                    tier_to=self._tier2.model,
+                ))
+
+                round_num += 1
+                arbiter_resp = self._run_tier2_arbiter(
+                    session_id, round_num, task, snapshot_hash,
+                    current_responses, trigger,
+                )
+                tier2_injected = True
+
+                _ingest([arbiter_resp], accumulators)
+
+                arbiter_round = {
+                    "session_id": session_id,
+                    "round": round_num,
+                    "tier": "cloud_arbiter",
+                    "responses": [arbiter_resp],
+                    "accumulators": {
+                        hid: {"S_g": acc.S_g, "S_i": acc.S_i, "S_net": acc.S_net}
+                        for hid, acc in accumulators.items()
+                    },
+                }
+                all_rounds.append(arbiter_round)
+                self._emit("round_complete", arbiter_round)
+
+                consensus, winning_hid, consensus_score = _consensus_cleared(
+                    accumulators, self.theta_consensus
+                )
+                if consensus:
+                    terminated_reason = "consensus_after_escalation"
+                    prev_responses = [arbiter_resp]
+                else:
+                    terminated_reason = "escalated_no_consensus"
+                    prev_responses = [arbiter_resp]
+                break
+
+            prev_responses = current_responses
+
+        # ── Build final result ────────────────────────────────────────────
+        best_hid = winning_hid if terminated_reason.startswith("consensus") else (
+            max(accumulators, key=lambda h: accumulators[h].S_net, default=None)
+        )
+        best_score = accumulators[best_hid].S_net if best_hid and best_hid in accumulators else 0.0
+
+        final_responses = prev_responses
+        winners = [r for r in final_responses if r.get("signal", {}).get("polarity", 0) >= 0]
+        if winners:
+            best_resp = max(winners, key=lambda r: r.get("signal", {}).get("confidence", 0))
+        else:
+            best_resp = final_responses[0] if final_responses else {}
+
+        dissenters = sum(
+            1 for r in final_responses if r.get("signal", {}).get("polarity", 0) < 0
+        )
+        disagreement = dissenters / len(final_responses) if final_responses else 1.0
+
+        result = {
+            "session_id": session_id,
+            "final_answer": best_resp.get("answer", "(no answer)"),
+            "consensus_score": round(min(best_score, 1.0), 4),
+            "rounds": round_num,
+            "snapshot_hash": snapshot_hash,
+            "snapshot_timestamp": datetime.now(timezone.utc).isoformat(),
+            "tier1_agents": [t.name for t in self._tier1],
+            "tier2_agent": self._tier2.name,
+            "tier2_injected": tier2_injected,
+            "terminated_reason": terminated_reason,
+            "winning_hypothesis": best_hid,
+            "disagreement_score": round(disagreement, 4),
+            "escalations": [
+                {
+                    "round": e.triggered_at_round,
+                    "trigger": e.trigger_type,
+                    "tier_from": e.tier_from,
+                    "tier_to": e.tier_to,
+                    "timestamp": e.timestamp,
+                }
+                for e in escalation_records
+            ],
+            "signal_manifold": {
+                hid: {"S_g": acc.S_g, "S_i": acc.S_i, "S_net": acc.S_net}
+                for hid, acc in accumulators.items()
+            },
+            "all_rounds": all_rounds,
+
+            # ── IEP-A3 fields ─────────────────────────────────────────────
+            # Downstream consumers (IEPBuilder, IEPValidator) check for the
+            # presence of snapshot_vector and vectorized_bus to decide whether
+            # to engage cosine-similarity verification.
+            "snapshot_vector": snapshot_vector,
+            "vectorized_bus": self.vectorized_bus and snapshot_vector is not None,
+            "rat_similarity_threshold": self.rat_similarity_threshold,
+            "embedding_model": self.embedding_model,
+        }
+
+        self._emit("session_complete", result)
+        return result
+
+    # ── Tier-2 arbiter ────────────────────────────────────────────────────
+
+    def _run_tier2_arbiter(
+        self,
+        session_id: str,
+        round_num: int,
+        task: str,
+        snapshot_hash: str,
+        prior_responses: list[dict],
+        trigger: str,
+    ) -> dict:
+        context = (
+            f"ESCALATION CONTEXT: Local agents reached a '{trigger}' gate. "
+            f"You are the cloud arbiter. Prior positions:\n"
+        )
+        for r in prior_responses:
+            sig = r.get("signal", {})
+            pol = {1: "SUPPORT", 0: "NEUTRAL", -1: "OPPOSE"}.get(sig.get("polarity", 0), "?")
+            context += (
+                f"  [{r.get('agent_id')}] {pol} conf={sig.get('confidence', 0):.2f}: "
+                f"{r.get('answer', '')[:120]}\n"
+            )
+        context += "Provide a decisive arbitration."
+
+        full_task = f"{task}\n\n{context}"
+
+        self._emit("tier2_invoked", {
+            "session_id": session_id,
+            "round": round_num,
+            "model": self._tier2.model,
+            "trigger": trigger,
+        })
+
+        resp = _call_ollama(
+            agent_id=self._tier2.name,
+            model=self._tier2.model,
+            host=self._tier2.host,
+            session_id=session_id,
+            round_num=round_num,
+            task=full_task,
+            snapshot_hash=snapshot_hash,
+            others=[],
+            temperature=self._tier2.temperature,
+            timeout_s=self._tier2.timeout_s,
+        )
+        return resp or self._abstention(
+            self._tier2.name, session_id, round_num, snapshot_hash
+        )
+
+    # ── Helpers ───────────────────────────────────────────────────────────
+
+    def _emit(self, event: str, data: dict[str, Any]) -> None:
+        try:
+            self._on_event(event, data)
+        except Exception:
+            pass
+
+    @staticmethod
+    def _abstention(
+        agent_id: str, session_id: str, round_num: int, snapshot_hash: str
+    ) -> dict:
+        return {
+            "type": "agent.response",
+            "session_id": session_id,
+            "agent_id": agent_id,
+            "round": round_num,
+            "snapshot_hash": snapshot_hash,
+            "hypothesis_id": f"H_{agent_id}_abstain",
+            "answer": "(abstention)",
+            "answer_hash": "abstain00000000",
+            "signal": {
+                "confidence": 0.0,
+                "polarity": 0,
+                "generative_strength": 0.0,
+                "inhibitory_pressure": 0.0,
+            },
+            "expected_state_change": {
+                "keys_affected": [],
+                "predicted_delta": {},
+                "confidence": 0.0,
+            },
+            "explanation": "Abstention — agent unreachable or error",
+        }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Public helper: cosine similarity (re-exported so IEPValidator can import it)
+# ─────────────────────────────────────────────────────────────────────────────
+
+cosine_similarity = _cosine_similarity
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Default tier presets
+# ─────────────────────────────────────────────────────────────────────────────
+
+DEFAULT_TIER1 = [
+    TierConfig(
+        name="mistral",
+        model="mistral",
+        host="http://127.0.0.1:11434",
+        temperature=0.65,
+        max_rounds=3,
+        characterizer_model="mistral", 
+    ),
+    TierConfig(
+        name="qwen",
+        model="qwen2.5-coder:32b",
+        host="http://127.0.0.1:11434",
+        temperature=0.75,
+        max_rounds=3,
+        characterizer_model="mistral", 
+    ),
+]
+
+DEFAULT_TIER2 = TierConfig(
+    name="nemotron",
+    model="nemotron",
+    host="http://127.0.0.1:11434",
+    temperature=0.5,
+    timeout_s=120.0,
+    max_rounds=1,
+    characterizer_model="mistral",
+)

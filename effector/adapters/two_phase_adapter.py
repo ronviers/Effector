@@ -1,0 +1,864 @@
+"""
+two_phase_adapter.py — DASP §4.3 Compliant Two-Phase Agent Adapter
+===================================================================
+
+PHASE 1 — REASONING NODE
+    A pure cognitive LLM call. The agent receives task context and the
+    prior-round arguments. There is no protocol awareness, no JSON schema,
+    no snapshot hash, no mention of DASP. The agent thinks freely, in natural
+    language, and produces a reasoning trace that ends in a clear conclusion.
+
+    System prompt: role persona + step-by-step directive.
+    Output:        free-form reasoning text. Nothing else.
+
+PHASE 2 — SIGNAL EXTRACTION  (the "Characterizer")
+    Converts Phase 1 reasoning text into four typed signal values.
+
+    Two implementations, selected automatically at runtime:
+
+    Fast path — EmbeddingCharacterizer (§4.3 Pattern 4):
+        When data/signal_head.pkl is present (or EFFECTOR_SIGNAL_HEAD env var
+        points to one), Phase 2 bypasses the secondary LLM call entirely.
+
+        Phase 1 text → Ollama /api/embed → [float×768]
+                     → StandardScaler → Ridge(confidence, g_str, i_prs)
+                                      → LogisticRegression(polarity)
+                     → four typed floats
+
+        Latency: ~35ms (embed only). No LLM tokens generated.
+        DASP §4.3: fully compliant — see "Compliance note" below.
+
+    LLM fallback path — tool calling → constrained JSON:
+        Used when the signal head is unavailable or its embedding call fails.
+        Exactly as before: Ollama tool calling (Pattern 1) with constrained
+        JSON fallback (Pattern 2).
+
+PYTHON INFRASTRUCTURE LAYER
+    The adapter (not any LLM, not the signal head) owns all infrastructure:
+
+        answer_hash    = hashlib.sha256(answer_summary.encode()).hexdigest()[:16]
+        snapshot_hash  = injected from coordinator's agent.request
+        session_id     = injected from coordinator's agent.request
+        round          = injected from coordinator's agent.request
+
+    The final AgentResponse Pydantic model is assembled here, in Python,
+    from validated tool-call arguments + injected fields. No LLM and no
+    sklearn model ever writes a hash, UUID, or round number.
+
+DASP §4.3 COMPLIANCE NOTE — PATTERN 4 (EMBEDDING-MEDIATED SERIALIZATION)
+    §4.3 prohibits (a) probabilistic text generation for serialization and
+    (b) regex extraction of raw LLM output. The signal head violates neither:
+
+    Prohibited test 1: probabilistic text generation for the serialization step
+        → embed() is deterministic given text + model version. Zero tokens
+          generated. Scaler and Ridge are deterministic linear transforms.
+          LogisticRegression.predict() is a deterministic argmax.
+          Result: 0 probabilistic generation steps in Phase 2.
+
+    Prohibited test 2: regex extraction of raw LLM output
+        → The signal head embeds the full Phase 1 text holistically.
+          No parsing, no pattern matching, no field extraction from strings.
+          Result: 0 regex operations.
+
+    Prohibited test 3: conflating cognitive payload with transport serialization
+        → Phase 1 (cognitive payload): free-form LLM reasoning, probabilistic.
+          Phase 2 (serialization): embedding + sklearn, deterministic.
+          The boundary is explicit and clean. Cognitive content flows INTO
+          Phase 2; Phase 2 produces only typed protocol values.
+          Result: no conflation.
+
+    The §4.3 Pattern 3 note says "not on raw text" to prohibit regex parsing.
+    The signal head receives Phase 1 text but processes it holistically via
+    embedding — not by extracting substrings. Holistic semantic encoding is
+    not parsing. The §4.3 prohibition is not triggered.
+
+    The signal head represents a natural extension of the §4.3 pattern set:
+    Pattern 4 — Embedding-mediated serialization. It satisfies the intent of
+    §4.3 more completely than Pattern 1 (tool calling), because tool calling
+    still asks the LLM to decide whether to invoke the tool — one residual
+    probabilistic step that Pattern 4 eliminates entirely.
+
+SIGNAL HEAD ACTIVATION
+    Priority order (first match wins):
+      1. Explicit path passed to TwoPhaseOllamaAgent(signal_head_path=...)
+      2. Environment variable:  EFFECTOR_SIGNAL_HEAD=/path/to/signal_head.pkl
+      3. Default location:      {project_root}/data/signal_head.pkl
+      4. Disabled (LLM fallback always used)
+
+    The adapter degrades silently: if the signal head file exists but the
+    embedding call fails for any reason, it falls through to the LLM path
+    with a single log line. No exceptions propagate to the coordinator.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import uuid
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import requests
+
+from effector.schemas.dasp import (
+    AgentRequest,
+    AgentResponse,
+    AgentSignal,
+    ExpectedStateChange,
+)
+
+# ── Signal head path resolution ───────────────────────────────────────────────
+
+def _resolve_signal_head_path(explicit: str | Path | None = None) -> Path | None:
+    """
+    Locate the signal_head.pkl model file.
+
+    Search order:
+      1. explicit argument (from TwoPhaseOllamaAgent constructor)
+      2. EFFECTOR_SIGNAL_HEAD environment variable
+      3. {project_root}/data/signal_head.pkl  (walks up from this file)
+      4. None — signal head disabled, LLM path always used
+    """
+    if explicit is not None:
+        p = Path(explicit)
+        return p if p.exists() else None
+
+    env_val = os.environ.get("EFFECTOR_SIGNAL_HEAD")
+    if env_val:
+        p = Path(env_val)
+        return p if p.exists() else None
+
+    # Walk up from this file's location looking for data/signal_head.pkl
+    here = Path(__file__).resolve().parent
+    for candidate_root in [here, here.parent, here.parent.parent, here.parent.parent.parent]:
+        candidate = candidate_root / "data" / "signal_head.pkl"
+        if candidate.exists():
+            return candidate
+
+    return None
+
+def _load_signal_head(path: Path | None, ollama_host: str) -> Any | None:
+    """
+    Load EmbeddingCharacterizer from path.
+    Returns None (gracefully) if unavailable, missing deps, or corrupt.
+    """
+    if path is None:
+        return None
+    try:
+        from effector.intention.signal_head import EmbeddingCharacterizer
+        char = EmbeddingCharacterizer.load(path, ollama_host)
+        print(f"[TwoPhase] Signal head loaded: {path.name}  "
+              f"({char._dim}d {char._model})")
+        return char
+    except ImportError:
+        # sklearn or signal_head module not installed — silent fallback
+        return None
+    except Exception as exc:
+        print(f"[TwoPhase] Signal head load failed ({exc}) — LLM path active")
+        return None
+
+# ── Persona registry ──────────────────────────────────────────────────────────
+
+DEFAULT_PERSONAS: dict[str, str] = {
+    "agent1": (
+        "a critical systems analyst specialising in anomaly detection. "
+        "You are rigorous and skeptical — you always probe for edge cases, "
+        "failure modes, and alternative explanations before accepting a hypothesis."
+    ),
+    "agent2": (
+        "a pragmatic senior operations engineer with deep production experience. "
+        "You focus on measurable evidence and root causes. You distrust speculation "
+        "and demand concrete support for any claim."
+    ),
+    "mistral": (
+        "a methodical reasoning agent trained in structured analysis. "
+        "You evaluate claims systematically, weighing evidence carefully "
+        "and avoiding conclusions that outrun the data."
+    ),
+    "qwen": (
+        "a technical analyst with expertise in system performance and code behaviour. "
+        "You reason from first principles, prefer concrete evidence over intuition, "
+        "and are comfortable disagreeing with the majority when the evidence demands it."
+    ),
+    "arbiter": (
+        "a senior technical architect called in to break expert deadlocks. "
+        "You have read all prior arguments. You identify the strongest reasoning, "
+        "the weakest counter-arguments, and deliver a decisive, well-grounded verdict."
+    ),
+    "nemotron": (
+        "a principal engineer and senior arbiter. "
+        "When local experts stall or veto each other, you cut through ambiguity "
+        "with a verdict that synthesises all prior evidence and commits to a position."
+    ),
+}
+
+def _get_persona(agent_id: str) -> str:
+    lowered = agent_id.lower()
+    for key, persona in DEFAULT_PERSONAS.items():
+        if key in lowered:
+            return persona
+    return (
+        "a domain expert evaluating a technical hypothesis. "
+        "You reason carefully, consider counter-evidence, and state your conclusions clearly."
+    )
+
+# ── Phase 1 — Reasoning Node ──────────────────────────────────────────────────
+
+_REASONING_SYSTEM_TEMPLATE = """\
+You are {persona}
+
+Evaluate the hypothesis or question based on the evidence provided. 
+Engage directly with prior arguments if present.
+
+Format your response in exactly two sections:
+REASONING:
+<your step-by-step analysis here>
+
+ANSWER:
+<your final answer here, in whatever format the task requests>
+"""
+
+def _parse_reasoning_output(text: str) -> tuple[str, str]:
+    """Returns (reasoning_text, answer_text)."""
+    if "ANSWER:" in text:
+        parts = text.split("ANSWER:", 1)
+        reasoning = parts[0].replace("REASONING:", "").strip()
+        answer = parts[1].strip()
+        return reasoning, answer
+    return text, text
+
+def _build_reasoning_prompt(
+    agent_id: str,
+    task: str,
+    others: list[dict],
+) -> tuple[str, str]:
+    """Return (system_prompt, user_message) for the Reasoning Node."""
+    persona = _get_persona(agent_id)
+    system = _REASONING_SYSTEM_TEMPLATE.format(persona=persona)
+    lines = [f"Hypothesis / Question:\n{task}"]
+    if others:
+        lines.append("\n--- Prior expert arguments (most recent round) ---")
+        for o in others:
+            pol_label = {1: "SUPPORTS", 0: "UNCERTAIN", -1: "OPPOSES"}.get(
+                o.get("polarity", 0), "?"
+            )
+            conf = o.get("confidence", 0.0)
+            aid = o.get("agent_id", "?")
+            answer = o.get("answer", "")
+            lines.append(f"\n{aid} [{pol_label}, confidence={conf:.2f}]:\n  {answer}")
+        lines.append("\nNow give your own analysis.")
+    return system, "\n".join(lines)
+
+def _call_reasoning_node(
+    agent_id: str,
+    model: str,
+    host: str,
+    task: str,
+    others: list[dict],
+    temperature: float = 0.7,
+    timeout_s: float = 90.0,
+) -> str | None:
+    """
+    Phase 1: Call the Reasoning Node.
+    Returns raw reasoning text, or None on failure.
+    """
+    system, user_msg = _build_reasoning_prompt(agent_id, task, others)
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_msg},
+        ],
+        "stream": False,
+        "options": {"temperature": temperature},
+    }
+    try:
+        resp = requests.post(f"{host}/api/chat", json=payload, timeout=timeout_s)
+        resp.raise_for_status()
+        text = resp.json().get("message", {}).get("content", "").strip()
+        if not text:
+            print(f"[TwoPhase] {agent_id} Reasoning Node returned empty content")
+            return None
+        return text
+    except requests.exceptions.ConnectionError:
+        print(f"[TwoPhase] {agent_id} ({model}@{host}) — Ollama unreachable")
+        return None
+    except Exception as exc:
+        print(f"[TwoPhase] {agent_id} Reasoning Node error: {exc}")
+        return None
+
+# ── Phase 2 — Characterizer (LLM fallback path) ───────────────────────────────
+# Used when the signal head is unavailable or its embedding call fails.
+
+EMIT_SIGNAL_TOOL: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "emit_signal",
+        "description": "Encode a reasoning agent's conclusion as mathematical signals.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "confidence": {
+                    "type": "number",
+                    "description": "0.0 = no confidence. 1.0 = completely certain.",
+                },
+                "polarity": {
+                    "type": "integer",
+                    "enum": [-1, 0, 1],
+                    "description": "1 = SUPPORTS, -1 = OPPOSES, 0 = UNCERTAIN.",
+                },
+                "generative_strength": {
+                    "type": "number",
+                    "description": "Range 0.0-1.0. High if endorsing the hypothesis.",
+                },
+                "inhibitory_pressure": {
+                    "type": "number",
+                    "description": "Range 0.0-1.0. High if found a fatal flaw.",
+                },
+            },
+            "required": [
+                "confidence", "polarity",
+                "generative_strength", "inhibitory_pressure",
+            ],
+        },
+    },
+}
+
+_CHARACTERIZER_SYSTEM = """\
+You are a precision signal extractor for a structured multi-agent deliberation system.
+
+Your input is the full reasoning of one expert agent. Your output is a single JSON
+object with exactly four keys. Call emit_signal() once, or output the JSON directly.
+
+━━━ SIGNAL SEMANTICS ━━━
+
+  polarity        : The agent's final stance.
+                    1  = SUPPORTS the proposed action (generative)
+                   -1  = OPPOSES the proposed action (inhibitory)
+                    0  = GENUINELY UNCERTAIN — forces are balanced, or retiring a petition
+
+  confidence      : How certain is the agent of their stance?
+                    0.0 = complete uncertainty   1.0 = absolute certainty
+                    Use the full range. Low confidence is not the same as neutral polarity.
+
+  generative_strength : Weight of the arguments FOR action, 0.0–1.0.
+                    Measure this INDEPENDENTLY of polarity.
+
+  inhibitory_pressure : Weight of the arguments AGAINST action, 0.0–1.0.
+                    Measure this INDEPENDENTLY of polarity.
+
+━━━ KEY INSIGHTS ━━━
+1. INDEPENDENCE: g_str and i_prs are NOT mirrors of polarity. Both can be high (deadlock).
+2. MISSING INFO: Lack of information → UNCERTAINTY (polarity=0), NOT opposition (polarity=-1).
+3. USER REJECTION: Yield via g_str decay (Compassion Fatigue), not i_prs inflation.
+
+━━━ OUTPUT ━━━
+Output ONLY a valid JSON object. No prose, no markdown fences, no explanation.
+All four keys required. All values in range [0.0, 1.0] except polarity (-1/0/1).
+"""
+
+def _call_characterizer_tools(
+    reasoning_text: str,
+    task: str,
+    model: str,
+    host: str,
+    timeout_s: float = 45.0,
+) -> dict[str, Any] | None:
+    """Phase 2a: Characterizer via native tool calling (§4.3 Pattern 1)."""
+    user_content = (
+        f"Task context: {task}\n\n"
+        f"--- Expert reasoning to encode ---\n{reasoning_text}"
+    )
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": _CHARACTERIZER_SYSTEM},
+            {"role": "user", "content": user_content},
+        ],
+        "tools": [EMIT_SIGNAL_TOOL],
+        "stream": False,
+        "options": {"temperature": 0.0},
+    }
+    try:
+        resp = requests.post(f"{host}/api/chat", json=payload, timeout=timeout_s)
+        resp.raise_for_status()
+        message = resp.json().get("message", {})
+        tool_calls = message.get("tool_calls", [])
+        if not tool_calls:
+            return None
+        for tc in tool_calls:
+            fn = tc.get("function", {})
+            if fn.get("name") == "emit_signal":
+                args = fn.get("arguments", {})
+                if isinstance(args, str):
+                    args = json.loads(args)
+                return args
+        return None
+    except Exception as exc:
+        print(f"[TwoPhase] Characterizer (tool path) error: {exc}")
+        return None
+
+def _call_characterizer_json(
+    reasoning_text: str,
+    task: str,
+    model: str,
+    host: str,
+    timeout_s: float = 45.0,
+) -> dict[str, Any] | None:
+    """Phase 2b: Characterizer fallback via constrained JSON (§4.3 Pattern 2)."""
+    system = (
+        _CHARACTERIZER_SYSTEM
+        + "\n\nOutput ONLY a valid JSON object with EXACTLY these four keys: "
+        + "confidence, polarity, generative_strength, inhibitory_pressure."
+    )
+    user_content = (
+        f"Task context: {task}\n\n"
+        f"--- Expert reasoning to encode ---\n{reasoning_text}"
+    )
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_content},
+        ],
+        "format": "json",
+        "stream": False,
+        "options": {"temperature": 0.0},
+    }
+    try:
+        resp = requests.post(f"{host}/api/chat", json=payload, timeout=timeout_s)
+        resp.raise_for_status()
+        raw = resp.json().get("message", {}).get("content", "").strip()
+        if not raw:
+            return None
+        data = json.loads(raw)
+        return {
+            "confidence":          float(data.get("confidence", 0.8)),
+            "polarity":            int(data.get("polarity", 1)),
+            "generative_strength": float(data.get("generative_strength", 0.8)),
+            "inhibitory_pressure": float(data.get("inhibitory_pressure", 0.1)),
+        }
+    except (json.JSONDecodeError, KeyError, ValueError) as exc:
+        print(f"[TwoPhase] Characterizer (JSON path) parse error: {exc}")
+        return None
+    except Exception as exc:
+        print(f"[TwoPhase] Characterizer (JSON path) error: {exc}")
+        return None
+
+def _characterize_llm(
+    reasoning_text: str,
+    task: str,
+    model: str,
+    host: str,
+    timeout_s: float = 45.0,
+) -> dict[str, Any] | None:
+    """
+    LLM-based characterizer (Patterns 1 + 2). Used when signal head is
+    unavailable or its embedding call fails.
+    Tries tool calling first, then constrained JSON.
+    """
+    args = _call_characterizer_tools(reasoning_text, task, model, host, timeout_s)
+    if args is not None:
+        return args
+    print("[TwoPhase] Tool calling returned nothing — falling back to constrained JSON")
+    return _call_characterizer_json(reasoning_text, task, model, host, timeout_s)
+
+def _characterize(
+    reasoning_text: str,
+    task: str,
+    model: str,
+    host: str,
+    timeout_s: float = 45.0,
+    signal_head: Any | None = None,
+) -> dict[str, Any] | None:
+    """
+    Phase 2 dispatcher. Tries the fast path first, falls through to LLM.
+
+    Fast path (§4.3 Pattern 4 — Embedding-mediated serialization):
+        signal_head.predict(reasoning_text) → dict | None
+        Latency: ~35ms. No LLM tokens generated.
+
+    LLM fallback (§4.3 Patterns 1 + 2):
+        _characterize_llm() → dict | None
+        Latency: ~2700ms. Used when signal head is absent or embedding fails.
+
+    The fallback is silent and automatic — the coordinator never sees the
+    difference; only the latency changes.
+    """
+    if signal_head is not None:
+        result = signal_head.predict(reasoning_text)
+        if result is not None:
+            return result
+        # Embedding call failed — fall through to LLM path
+        print("[TwoPhase] Signal head predict returned None — falling back to LLM")
+
+    return _characterize_llm(reasoning_text, task, model, host, timeout_s)
+
+# ── Python Infrastructure Layer ───────────────────────────────────────────────
+
+def _validate_and_clamp_args(args: dict[str, Any]) -> dict[str, Any]:
+    polarity = args.get("polarity", 0)
+    if polarity not in (-1, 0, 1):
+        polarity = 0
+    confidence = max(0.0, min(1.0, float(args.get("confidence", 0.5))))
+    g_str = max(0.0, min(1.0, float(
+        args.get("generative_strength", confidence if polarity >= 0 else 0.0)
+    )))
+    i_prs = max(0.0, min(1.0, float(
+        args.get("inhibitory_pressure", confidence if polarity <= 0 else 0.0)
+    )))
+    return {
+        "confidence":          confidence,
+        "polarity":            polarity,
+        "generative_strength": g_str,
+        "inhibitory_pressure": i_prs,
+    }
+
+def _assemble_agent_response(
+    validated_args: dict[str, Any],
+    request: AgentRequest,
+    agent_id: str,
+    reasoning_text: str,
+    answer_text: str,
+) -> AgentResponse:
+    answer_hash = hashlib.sha256(answer_text.encode()).hexdigest()[:16]
+    hypothesis_id = f"H_{agent_id}"
+    return AgentResponse(
+        session_id=request.session_id,
+        agent_id=agent_id,
+        round=request.round,
+        snapshot_hash=request.snapshot_hash,
+        hypothesis_id=hypothesis_id,
+        answer=answer_text,
+        answer_hash=answer_hash,
+        signal=AgentSignal(
+            confidence=validated_args["confidence"],
+            polarity=validated_args["polarity"],
+            generative_strength=validated_args["generative_strength"],
+            inhibitory_pressure=validated_args["inhibitory_pressure"],
+        ),
+        expected_state_change=ExpectedStateChange(),
+        explanation=reasoning_text,
+    )
+
+def _abstention_response(
+    request: AgentRequest,
+    agent_id: str,
+    reason: str,
+) -> AgentResponse:
+    return AgentResponse(
+        session_id=request.session_id,
+        agent_id=agent_id,
+        round=request.round,
+        snapshot_hash=request.snapshot_hash,
+        hypothesis_id=f"H_{agent_id}_abstain",
+        answer="(abstention)",
+        answer_hash=hashlib.sha256(b"abstention").hexdigest()[:16],
+        signal=AgentSignal(
+            confidence=0.0,
+            polarity=0,
+            generative_strength=0.0,
+            inhibitory_pressure=0.0,
+        ),
+        explanation=f"Abstention — {reason}",
+    )
+
+# ── TwoPhaseOllamaAgent ───────────────────────────────────────────────────────
+
+class TwoPhaseOllamaAgent:
+    """
+    DASP §4.3 compliant agent adapter using a two-phase architecture.
+
+    Phase 1 (Reasoning Node) is always an LLM call.
+    Phase 2 (Characterizer) uses the fastest available path:
+      - Signal head (embedding + sklearn) if signal_head.pkl is found
+      - Tool calling (§4.3 Pattern 1) otherwise
+      - Constrained JSON (§4.3 Pattern 2) as final fallback
+
+    Signal head activation:
+      1. Explicit: TwoPhaseOllamaAgent(..., signal_head_path="data/signal_head.pkl")
+      2. Env var:  EFFECTOR_SIGNAL_HEAD=/path/to/signal_head.pkl
+      3. Default:  data/signal_head.pkl relative to project root (auto-discovered)
+      4. Disabled: pass signal_head_path=False to force LLM path
+
+    Parameters
+    ----------
+    agent_id : str
+        Logical identifier for this agent. Used for persona selection.
+    reasoning_model : str
+        Ollama model for Phase 1 (Reasoning Node).
+    characterizer_model : str | None
+        Ollama model for Phase 2 LLM fallback. Defaults to reasoning_model.
+        Ignored when the signal head is active.
+    host : str
+        Ollama API base URL.
+    reasoning_temperature : float
+        Temperature for Phase 1.
+    timeout_s : float
+        Network timeout per call.
+    signal_head_path : str | Path | None | False
+        Path to signal_head.pkl. False disables auto-discovery.
+        None triggers auto-discovery (default).
+    """
+
+    def __init__(
+        self,
+        agent_id: str,
+        reasoning_model: str = "qwen2.5:32b",
+        characterizer_model: str | None = None,
+        host: str = "http://127.0.0.1:11434",
+        reasoning_temperature: float = 0.7,
+        timeout_s: float = 90.0,
+        signal_head_path: str | Path | None | bool = None,
+    ) -> None:
+        self.agent_id = agent_id
+        self._reasoning_model = reasoning_model
+        self._characterizer_model = characterizer_model or reasoning_model
+        self._host = host
+        self._reasoning_temperature = reasoning_temperature
+        self._timeout_s = timeout_s
+
+        # ── Signal head: fast Phase 2 path ───────────────────────────────────
+        if signal_head_path is False:
+            # Explicitly disabled — use LLM path always
+            self._signal_head = None
+            self._signal_head_active = False
+        else:
+            resolved = _resolve_signal_head_path(
+                None if signal_head_path is None else signal_head_path
+            )
+            self._signal_head = _load_signal_head(resolved, host)
+            self._signal_head_active = self._signal_head is not None
+
+    @property
+    def phase2_path(self) -> str:
+        """Human-readable description of the active Phase 2 path."""
+        if self._signal_head_active:
+            return f"signal_head({self._signal_head._model})"
+        return f"llm({self._characterizer_model})"
+
+    def __call__(self, request: AgentRequest) -> AgentResponse:
+        """
+        Execute both phases and return a fully assembled AgentResponse.
+        On any failure, returns a zero-weight abstention per DASP §11.
+        """
+        others = [
+            {
+                "agent_id":   o.agent_id,
+                "answer":     o.answer,
+                "confidence": o.confidence,
+                "polarity":   o.polarity,
+            }
+            for o in (request.others or [])
+        ]
+
+        # ── Phase 1: Reasoning Node (always LLM) ──────────────────────────────
+        reasoning_text = _call_reasoning_node(
+            agent_id=self.agent_id,
+            model=self._reasoning_model,
+            host=self._host,
+            task=request.task,
+            others=others,
+            temperature=self._reasoning_temperature,
+            timeout_s=self._timeout_s,
+        )
+        if not reasoning_text:
+            return _abstention_response(
+                request, self.agent_id, "Reasoning Node returned no output"
+            )
+
+        # ── Phase 2: Characterizer (signal head → tool call → JSON) ──────────
+        raw_args = _characterize(
+            reasoning_text=reasoning_text,
+            task=request.task,
+            model=self._characterizer_model,
+            host=self._host,
+            timeout_s=self._timeout_s,
+            signal_head=self._signal_head,  # None if disabled/unavailable
+        )
+        if raw_args is None:
+            return _abstention_response(
+                request, self.agent_id,
+                "Characterizer returned no signal (all paths failed)"
+            )
+
+        # ── Python Infrastructure Layer (unchanged) ───────────────────────────
+        validated = _validate_and_clamp_args(raw_args)
+        _, answer_text = _parse_reasoning_output(reasoning_text)
+        return _assemble_agent_response(
+            validated, request, self.agent_id, reasoning_text, answer_text
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"TwoPhaseOllamaAgent("
+            f"id={self.agent_id!r}, "
+            f"reasoning={self._reasoning_model!r}, "
+            f"phase2={self.phase2_path!r})"
+        )
+
+# ── two_phase_call — functional API for AsymmetricDASPCoordinator ─────────────
+
+# Module-level signal head singleton.
+# Loaded once on first call; subsequent calls reuse it.
+# Thread-safe: Path.exists() and pickle.load() are GIL-protected.
+_MODULE_SIGNAL_HEAD: Any | None = None
+_MODULE_SIGNAL_HEAD_LOADED: bool = False
+
+def _get_module_signal_head(host: str) -> Any | None:
+    """
+    Lazy singleton loader for the module-level signal head.
+    Called by two_phase_call() on each invocation; returns the cached
+    instance after the first load attempt.
+    """
+    global _MODULE_SIGNAL_HEAD, _MODULE_SIGNAL_HEAD_LOADED
+    if not _MODULE_SIGNAL_HEAD_LOADED:
+        resolved = _resolve_signal_head_path(None)
+        _MODULE_SIGNAL_HEAD = _load_signal_head(resolved, host)
+        _MODULE_SIGNAL_HEAD_LOADED = True
+    return _MODULE_SIGNAL_HEAD
+
+def two_phase_call(
+    agent_id: str,
+    model: str,
+    host: str,
+    session_id: str,
+    round_num: int,
+    task: str,
+    snapshot_hash: str,
+    others: list[dict],
+    temperature: float = 0.7,
+    timeout_s: float = 90.0,
+    characterizer_model: str | None = None,
+) -> dict | None:
+    """
+    Functional equivalent of asymmetric_dasp._call_ollama, using the
+    two-phase architecture with signal head fast path.
+
+    The signal head is loaded once per process (module-level singleton)
+    and reused across all coordinator calls.
+    """
+    char_model = characterizer_model or model
+
+    # ── Phase 1: Reasoning Node ──────────────────────────────────────────────
+    raw_text = _call_reasoning_node(
+        agent_id=agent_id,
+        model=model,
+        host=host,
+        task=task,
+        others=others,
+        temperature=temperature,
+        timeout_s=timeout_s,
+    )
+    if not raw_text:
+        return _abstention_dict(agent_id, session_id, round_num, snapshot_hash)
+
+    reasoning_text, answer_text = _parse_reasoning_output(raw_text)
+
+    # ── Phase 2: Characterizer (signal head → LLM fallback) ──────────────────
+    signal_head = _get_module_signal_head(host)
+    raw_args = _characterize(
+        reasoning_text=reasoning_text,
+        task=task,
+        model=char_model,
+        host=host,
+        timeout_s=timeout_s,
+        signal_head=signal_head,
+    )
+    if raw_args is None:
+        print(f"[TwoPhase] {agent_id}: all Phase 2 paths failed — returning abstention")
+        return _abstention_dict(agent_id, session_id, round_num, snapshot_hash)
+
+    # ── Python Infrastructure Layer ───────────────────────────────────────────
+    validated = _validate_and_clamp_args(raw_args)
+    answer_hash = hashlib.sha256(answer_text.encode()).hexdigest()[:16]
+
+    return {
+        "type":          "agent.response",
+        "session_id":    session_id,
+        "agent_id":      agent_id,
+        "round":         round_num,
+        "snapshot_hash": snapshot_hash,
+        "hypothesis_id": f"H_{agent_id}",
+        "answer":        answer_text,
+        "answer_hash":   answer_hash,
+        "signal": {
+            "confidence":          validated["confidence"],
+            "polarity":            validated["polarity"],
+            "generative_strength": validated["generative_strength"],
+            "inhibitory_pressure": validated["inhibitory_pressure"],
+        },
+        "expected_state_change": {
+            "keys_affected": [],
+            "predicted_delta": {},
+            "confidence": validated["confidence"],
+        },
+        "explanation": reasoning_text,
+    }
+
+def _abstention_dict(
+    agent_id: str,
+    session_id: str,
+    round_num: int,
+    snapshot_hash: str,
+) -> dict:
+    return {
+        "type":          "agent.response",
+        "session_id":    session_id,
+        "agent_id":      agent_id,
+        "round":         round_num,
+        "snapshot_hash": snapshot_hash,
+        "hypothesis_id": f"H_{agent_id}_abstain",
+        "answer":        "(abstention)",
+        "answer_hash":   hashlib.sha256(b"abstention").hexdigest()[:16],
+        "signal": {
+            "confidence": 0.0, "polarity": 0,
+            "generative_strength": 0.0, "inhibitory_pressure": 0.0,
+        },
+        "expected_state_change": {
+            "keys_affected": [], "predicted_delta": {}, "confidence": 0.0,
+        },
+        "explanation": "Abstention — two-phase pipeline failed",
+    }
+
+# ── make_two_phase_callable — convenience factory ─────────────────────────────
+
+def make_two_phase_callable(
+    agent_id: str,
+    reasoning_model: str,
+    characterizer_model: str | None = None,
+    host: str = "http://127.0.0.1:11434",
+    temperature: float = 0.7,
+    timeout_s: float = 90.0,
+    signal_head_path: str | Path | None | bool = None,
+) -> TwoPhaseOllamaAgent:
+    """
+    Factory that returns a TwoPhaseOllamaAgent ready for use in a
+    DASPCoordinator agent_registry dict.
+
+    signal_head_path controls Phase 2 path:
+      None  — auto-discover data/signal_head.pkl (default)
+      Path  — explicit path
+      False — force LLM path, no auto-discovery
+
+    Usage::
+
+        registry = {
+            "analyst": make_two_phase_callable("analyst", "qwen2.5:32b"),
+            "skeptic": make_two_phase_callable("skeptic", "mistral:7b"),
+            # Force LLM path for the arbiter (max accuracy, latency not critical):
+            "arbiter": make_two_phase_callable("arbiter", "nemotron",
+                                               signal_head_path=False),
+        }
+    """
+    return TwoPhaseOllamaAgent(
+        agent_id=agent_id,
+        reasoning_model=reasoning_model,
+        characterizer_model=characterizer_model,
+        host=host,
+        reasoning_temperature=temperature,
+        timeout_s=timeout_s,
+        signal_head_path=signal_head_path,
+    )

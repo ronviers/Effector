@@ -2,29 +2,23 @@
 Effector Engine — Main Reasoning Loop
 ======================================
 Integrates Substrate Telemetry, Asymmetric DASP, Reflex Caching, IEP,
-Foley Ambient Audio, and the Resonance Layer.
+Foley Ambient Audio, and the Audio MCP Service.
 
-Resonance Layer additions
---------------------------
-Phase 1 — The Rehearsal Room (ResonanceVoice / Kokoro-82M)
+Phase 1 — The Rehearsal Room (Kokoro TTS via MCP)
     Agents speak their reasoning aloud during DASP deliberation.
-    The player hears the Acolytes passionately debating desktop thermodynamics.
 
 Phase 2 — The Rite of Offering (existing IEP Queue UI)
     The debate concludes. The Rich UI displays the Intention Envelope.
-    The agents have fallen silent. The petition is on the altar.
 
-Phase 3 — The Sacred Interval (ResonanceWorld / AudioLDM 2)
+Phase 3 — The Sacred Interval (AudioLDM 2 via MCP)
     The player clicks ACK (or the Reflex cache approves). The UI locks into
-    the Sacred Interval display, showing diffusion step progress. The OS
-    action is HELD until the audio generation completes. The 30-second wait
-    is the physics of miracle-work, made visible.
+    the Sacred Interval display. The OS action is HELD until the audio 
+    generation completes via the remote MCP service. 
 
 Phase 4 — Manifestation or The Void
     ACK: The generated audio plays. At that exact millisecond, the OS
          action executes. Reality changes.
-    NACK: Nothing. The speakers stay dead. The desktop stays messy. The
-          agents will notice in the next polling cycle.
+    NACK: Nothing. The desktop stays messy.
 """
 
 from __future__ import annotations
@@ -46,8 +40,6 @@ from rich.console import Console
 from rich.live import Live
 from rich.layout import Layout
 from rich.panel import Panel
-from rich.text import Text
-from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
 console = Console()
 
@@ -58,19 +50,16 @@ ui_dasp_status:    str = "IDLE"
 ui_manifold_text:  str = "No active debate."
 ui_logs: deque = deque(maxlen=18)
 
-# Sacred Interval state (set by ResonanceWorld on_progress callback)
+# Sacred Interval state
 ui_sacred_active:  bool = False
 ui_sacred_text:    str = ""
-ui_sacred_prompt:  str = ""
 ui_sacred_step:    int = 0
-ui_sacred_total:   int = 50
-
+ui_sacred_total:   int = 1
 
 def push_log(msg: str, style: str = "dim") -> None:
     ts = datetime.now().strftime("%H:%M:%S")
     with ui_lock:
         ui_logs.append(f"[{style}][{ts}] {msg}[/]")
-
 
 def update_ui_layout(layout: Layout) -> None:
     """Repaint all three panels from global state. Thread-safe via ui_lock."""
@@ -78,7 +67,6 @@ def update_ui_layout(layout: Layout) -> None:
         _update_telemetry(layout)
         _update_dasp_or_sacred(layout)
         _update_queue(layout)
-
 
 def _update_telemetry(layout: Layout) -> None:
     layout["telemetry"].update(
@@ -89,16 +77,15 @@ def _update_telemetry(layout: Layout) -> None:
         )
     )
 
-
 def _update_dasp_or_sacred(layout: Layout) -> None:
     if ui_sacred_active:
         # The Sacred Interval takes over the DASP panel
-        filled  = int(20 * ui_sacred_step / max(ui_sacred_total, 1))
-        bar     = "█" * filled + "░" * (20 - filled)
+        # We don't have progress streaming from the MCP service yet, so we show an indeterminate state
+        bar     = "██████████░░░░░░░░░░" 
         content = (
             f"[bold gold1]⚖️  THE EFFECTOR WEIGHS THE OFFERING[/bold gold1]\n\n"
             f"{ui_sacred_text}\n\n"
-            f"[dim]{ui_sacred_prompt[:80]}[/dim]"
+            f"[dim]Awaiting Audio Service...[/dim]"
         )
         layout["dasp"].update(
             Panel(
@@ -117,7 +104,6 @@ def _update_dasp_or_sacred(layout: Layout) -> None:
             )
         )
 
-
 def _update_queue(layout: Layout) -> None:
     log_content = "\n".join(ui_logs)
     layout["queue"].update(
@@ -127,7 +113,6 @@ def _update_queue(layout: Layout) -> None:
             border_style="green",
         )
     )
-
 
 def create_layout() -> Layout:
     layout = Layout()
@@ -148,7 +133,6 @@ def create_layout() -> Layout:
         )
     )
     return layout
-
 
 # ─── Model bootstrapper ───────────────────────────────────────────────────────
 
@@ -180,8 +164,8 @@ def verify_models(allow_auto_pull: bool = True) -> None:
         )
         sys.exit(1)
 
-
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+# Ensure the package is importable from the root
+sys.path.insert(0, str(Path(__file__).parent))
 
 try:
     from effector.telemetry.poller    import TelemetryPoller
@@ -197,30 +181,17 @@ try:
     from effector.executor            import LocalExecutor
     from effector.foley               import create_foley_system
     from effector.foley.integration   import wire_foley_to_main_loop
+    from effector.audio.client        import AudioClient
 except ImportError as e:
     print(f"[ERROR] Import failed: {e}")
     sys.exit(1)
 
-# Resonance Layer — optional; degrade gracefully if not installed
-try:
-    from effector.resonance import ResonanceVoice, ResonanceWorld
-    _RESONANCE_AVAILABLE = True
-except ImportError:
-    _RESONANCE_AVAILABLE = False
-    print(
-        "[ResonanceLayer] resonance module not found. "
-        "Place src/effector/resonance/ in your project to enable voices and world sounds."
-    )
+# ─── DASP event handler ───────────────────────────────────────────────────────
 
-
-# ─── DASP event handler (with optional voice) ─────────────────────────────────
-
-def _make_dasp_event_handler(
-    voice: Optional["ResonanceVoice"] = None,
-) -> Any:
+def _make_dasp_event_handler(audio: Optional[AudioClient] = None) -> Any:
     """
     Returns an on_event(event, data) callback wired to the display layer
-    and optionally to the ResonanceVoice for agent speech.
+    and to the MCP Audio Service for agent speech.
     """
     def on_event(event: str, data: dict) -> None:
         global ui_dasp_status, ui_manifold_text
@@ -230,12 +201,11 @@ def _make_dasp_event_handler(
                 ui_dasp_status = (
                     f"Round {data['round']} ({data.get('tier', 'local')})"
                 )
-                push_log(
-                    f"DASP: Round {data['round']} started.", "cyan"
-                )
+                push_log(f"DASP: Round {data['round']} started.", "cyan")
+                
                 # Announce round number via TTS
-                if voice and voice.is_available():
-                    voice.announce("round_started", data.get("round", 0))
+                if audio:
+                    audio.announce("round_started")
 
             elif event == "round_complete":
                 # ── Update signal manifold display ─────────────────────────────
@@ -252,12 +222,12 @@ def _make_dasp_event_handler(
                 ui_manifold_text = "\n".join(lines)
 
                 # ── Speak agent explanations ───────────────────────────────────
-                if voice and voice.is_available():
+                if audio:
                     for resp in data.get("responses", []):
                         explanation = resp.get("explanation", "")
                         agent_id    = resp.get("agent_id", "default")
                         if explanation and "(abstention)" not in explanation.lower():
-                            voice.speak(explanation, agent_id=agent_id)
+                            audio.speak(explanation, agent_id=agent_id)
 
             elif event == "escalation_triggered":
                 trigger = data.get("trigger", "")
@@ -265,48 +235,22 @@ def _make_dasp_event_handler(
                     f"[bold red]ESCALATION: {trigger} gate fired[/]"
                 )
                 push_log("DASP: Escalating to Tier-2...", "yellow")
-                if voice and voice.is_available():
+                
+                if audio:
                     if trigger == "inhibition":
-                        voice.announce("inhibition")
+                        audio.announce("inhibition")
                     else:
-                        voice.announce("escalation")
+                        audio.announce("escalation")
 
             elif event == "consensus_cleared":
                 score = data.get("consensus_score", 0)
                 ui_dasp_status = (
                     f"[bold green]CONSENSUS REACHED (Score: {score:.2f})[/]"
                 )
-                if voice and voice.is_available():
-                    voice.announce("consensus")
+                if audio:
+                    audio.announce("consensus")
 
     return on_event
-
-
-# ─── Sacred Interval progress callback ────────────────────────────────────────
-
-def _make_sacred_interval_progress(layout: Layout) -> Any:
-    """
-    Returns a callback(step, total, text) that updates the Sacred Interval
-    UI in real time during AudioLDM 2 diffusion.
-    """
-    def on_progress(step: int, total: int, text: str) -> None:
-        global ui_sacred_active, ui_sacred_text, ui_sacred_step, ui_sacred_total
-
-        with ui_lock:
-            ui_sacred_active = step < total or (step == 0 and total > 0)
-            ui_sacred_text   = text
-            ui_sacred_step   = step
-            ui_sacred_total  = total if total > 0 else 50
-
-        # Update the layout immediately so the Live widget picks it up
-        try:
-            _update_dasp_or_sacred(layout)
-            _update_queue(layout)
-        except Exception:
-            pass
-
-    return on_progress
-
 
 # ─── IEP Queue consumer with Sacred Interval ──────────────────────────────────
 
@@ -314,14 +258,13 @@ def _consume_queue(
     eq: EnvelopeQueue,
     stop: threading.Event,
     executor: Any,
-    world: Optional["ResonanceWorld"] = None,
-    voice: Optional["ResonanceVoice"] = None,
+    audio: Optional[AudioClient] = None,
     layout: Optional[Layout] = None,
 ) -> None:
     """
     IEP queue consumer.
 
-    ACK path  — Sacred Interval (generate audio) → play → execute OS action.
+    ACK path  — Sacred Interval (generate audio via MCP) → execute OS action.
     NACK path — Silence. The void. The agents notice next cycle.
     """
     global ui_sacred_active, ui_sacred_text
@@ -347,7 +290,7 @@ def _consume_queue(
             )
 
             # ── Phase 3: The Sacred Interval ───────────────────────────────────
-            if world and world.is_available():
+            if audio:
                 push_log(
                     f"⚖️  [gold1]The Sacred Interval begins — "
                     f"The Effector generates: {target}[/]",
@@ -357,13 +300,12 @@ def _consume_queue(
                 with ui_lock:
                     ui_sacred_active = True
                     ui_sacred_text   = f"⚖️  Preparing the manifestation for: {target}"
-                    ui_sacred_step   = 0
 
                 if layout is not None:
                     _update_dasp_or_sacred(layout)
 
-                # BLOCKING: generates audio (30-45s on CPU, 15-25s on GPU)
-                audio_path = world.generate_and_play(target)
+                # BLOCKING: generates audio via the remote FastMCP service
+                audio_path = audio.generate(target)
 
                 with ui_lock:
                     ui_sacred_active = False
@@ -389,7 +331,7 @@ def _consume_queue(
                     )
             else:
                 push_log(
-                    f"✦ [dim]World sound not loaded — "
+                    f"✦ [dim]Audio client not active — "
                     f"manifesting in silence.[/dim]",
                     "dim",
                 )
@@ -403,14 +345,13 @@ def _consume_queue(
                     f"The agents will see the change.",
                     "bold green",
                 )
-                if voice and voice.is_available():
-                    voice.announce("offering_accepted")
+                if audio:
+                    audio.announce("offering_accepted")
             except Exception as exc:
                 push_log(f"[red]Execution error: {exc}[/red]", "red")
 
         else:
             # ── Phase 4: The Void — NACK ────────────────────────────────────────
-            # No audio. No execution. The speakers stay dead.
             reason = item.validation.failure_reason or "unknown"
             push_log(
                 f"IEP: [red]NACK[/] {eid} — "
@@ -423,9 +364,8 @@ def _consume_queue(
                 f"The agents will notice.[/dim]",
                 "dim",
             )
-            if voice and voice.is_available():
-                voice.announce("offering_rejected")
-
+            if audio:
+                audio.announce("offering_rejected")
 
 # ─── Main Loop ────────────────────────────────────────────────────────────────
 
@@ -434,8 +374,7 @@ def run_loop(
     debate_interval_s: float = 30.0,
     max_cycles: int = 0,
     queue_file: str = "iep_queue.jsonl",
-    voice_enabled: bool = True,
-    world_enabled: bool = True,
+    audio_enabled: bool = True,
 ) -> None:
 
     verify_models()
@@ -494,57 +433,25 @@ def run_loop(
     eq        = EnvelopeQueue(persist_path=queue_file)
     executor  = LocalExecutor(state_bus=bus, foley_mapper=mapper)
 
-    # ── Resonance Layer ───────────────────────────────────────────────────────
-    voice: Optional[ResonanceVoice] = None
-    world: Optional[ResonanceWorld] = None
-
-    if _RESONANCE_AVAILABLE:
-        layout_ref: list[Optional[Layout]] = [None]  # forward ref for closure
-
-        def _on_sacred_progress(step: int, total: int, text: str) -> None:
-            global ui_sacred_active, ui_sacred_text, ui_sacred_step, ui_sacred_total
-            with ui_lock:
-                ui_sacred_active = step < total or (step == 0 and total > 0)
-                ui_sacred_text   = text
-                ui_sacred_step   = step
-                ui_sacred_total  = total if total > 0 else 50
-            
-        voice = ResonanceVoice(enabled=voice_enabled)
-        world = ResonanceWorld(
-            enabled=world_enabled,
-            on_progress=_on_sacred_progress,
-        )
-
-        push_log("Starting Resonance Layer (Kokoro + AudioLDM 2)...")
-        voice.start()
-        world.start()
-
-        # Non-blocking — the loop starts while models load in background.
-        # Voices become available once Kokoro loads (~3-10s).
-        # World sounds become available once AudioLDM 2 loads (~30-120s
-        # or download time on first run).
+    # ── MCP Audio Client ──────────────────────────────────────────────────────
+    audio = AudioClient() if audio_enabled else None
+    if audio:
+        push_log("Audio MCP Client initialized.")
     else:
-        push_log(
-            "[dim]Resonance Layer not available — "
-            "no voices, no world sounds.[/dim]",
-            "dim",
-        )
-        layout_ref = [None]
+        push_log("[dim]Audio disabled. Running in silence.[/dim]", "dim")
 
-    # ── Wire voice into DASP coordinator ─────────────────────────────────────
-    coordinator._on_event = _make_dasp_event_handler(voice=voice)
+    # Wire audio into DASP coordinator
+    coordinator._on_event = _make_dasp_event_handler(audio=audio)
 
     # ── Layout ────────────────────────────────────────────────────────────────
     layout = create_layout()
-    if _RESONANCE_AVAILABLE and layout_ref is not None:
-        layout_ref[0] = layout  # inject into sacred interval callback closure
 
     # ── Queue consumer thread ─────────────────────────────────────────────────
     stop_consumer = threading.Event()
     consumer_thread = threading.Thread(
         target=_consume_queue,
         args=(eq, stop_consumer, executor),
-        kwargs={"world": world, "voice": voice, "layout": layout},
+        kwargs={"audio": audio, "layout": layout},
         name="IEPQueueConsumer",
         daemon=True,
     )
@@ -634,12 +541,8 @@ def run_loop(
             stop_consumer.set()
             consumer_thread.join(timeout=5.0)
             rat_store.close()
-            if voice:
-                voice.stop()
-            # AudioLDM 2 pipeline has no explicit close; GC handles it
             if "player" in dir():
                 player.shutdown()
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -650,14 +553,9 @@ if __name__ == "__main__":
     parser.add_argument("--max-cycles",       type=int,   default=0)
     parser.add_argument("--queue-file",       type=str,   default="iep_queue.jsonl")
     parser.add_argument(
-        "--no-voice",
+        "--no-audio",
         action="store_true",
-        help="Disable Kokoro TTS agent voices",
-    )
-    parser.add_argument(
-        "--no-world",
-        action="store_true",
-        help="Disable AudioLDM 2 world sound generation (Sacred Interval)",
+        help="Disable calls to the remote MCP Audio Service",
     )
     args = parser.parse_args()
 
@@ -666,6 +564,5 @@ if __name__ == "__main__":
         debate_interval_s=args.debate_interval,
         max_cycles=args.max_cycles,
         queue_file=args.queue_file,
-        voice_enabled=not args.no_voice,
-        world_enabled=not args.no_world,
+        audio_enabled=not args.no_audio,
     )

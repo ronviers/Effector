@@ -23,7 +23,7 @@ Usage
     python aggregate.py --profile code --no-strip-dividers
 
     # Force-include one file verbatim regardless of profile:
-    python aggregate.py --profile mcp --include-file mcp/registry_state.json
+    python aggregate.py --profile mcp --include-file effector/registry/state.json
 
 Handling modes (set per zone in context.toml)
 ---------------------------------------------
@@ -75,10 +75,7 @@ except ImportError:
         print("ERROR: pip install tomli   (needed on Python < 3.11)", file=sys.stderr)
         sys.exit(1)
 
-
-# ---------------------------------------------------------------------------
 # Built-in exclude defaults
-# ---------------------------------------------------------------------------
 
 _DEFAULT_EXCLUDE_EXTENSIONS: frozenset[str] = frozenset({
     # Compiled / binary
@@ -122,34 +119,24 @@ _STRIP_EXTENSIONS: frozenset[str] = frozenset({
     ".py", ".toml", ".cfg", ".ini", ".sh", ".bash",
 })
 
-
-# ---------------------------------------------------------------------------
 # Token estimation  (1 token ≈ 4 chars for English/code mix)
-# ---------------------------------------------------------------------------
 
 def _tokens(text: str) -> int:
     return max(1, len(text) // 4)
 
-
-# ---------------------------------------------------------------------------
 # Divider stripping
-# ---------------------------------------------------------------------------
 
 def _strip_dividers(text: str) -> str:
     stripped = _DIVIDER_RE.sub("", text)
     # Collapse 3+ blank lines to 2
     return re.sub(r"\n{3,}", "\n\n", stripped)
 
-
 def _maybe_strip(text: str, path: Path, strip_divs: bool) -> str:
     if strip_divs and path.suffix in _STRIP_EXTENSIONS:
         return _strip_dividers(text)
     return text
 
-
-# ---------------------------------------------------------------------------
 # Exclude helpers
-# ---------------------------------------------------------------------------
 
 def _load_global_excludes(
     cfg: dict,
@@ -164,7 +151,6 @@ def _load_global_excludes(
         )
     return ext, dirs
 
-
 def _is_excluded_dir(name: str, excl_dirs: frozenset[str]) -> bool:
     if name in excl_dirs:
         return True
@@ -172,7 +158,6 @@ def _is_excluded_dir(name: str, excl_dirs: frozenset[str]) -> bool:
         if pat.startswith("*") and name.endswith(pat[1:]):
             return True
     return False
-
 
 def _is_excluded_file(
     path: Path,
@@ -190,17 +175,14 @@ def _is_excluded_file(
             return True
     return False
 
-
-# ---------------------------------------------------------------------------
 # Summarizers
-# ---------------------------------------------------------------------------
 
 def _summarize_registry_state(path: Path) -> str:
     try:
         with open(path, encoding="utf-8") as fh:
             raw = json.load(fh)
     except Exception as exc:
-        return f"[registry_state.json — could not parse: {exc}]"
+        return f"[{path.name} — could not parse: {exc}]"
 
     entities: list = raw.get("e", [])
     bonds: dict    = raw.get("b", {})
@@ -231,7 +213,7 @@ def _summarize_registry_state(path: Path) -> str:
     strongest = [(k, v[0], v[1]) for k, v in sorted_bonds[-3:]][::-1]
 
     return "\n".join([
-        f"registry_state.json — SUMMARY ({len(entities)} entities, {len(bonds)} bonds)",
+        f"{path.name} — SUMMARY ({len(entities)} entities, {len(bonds)} bonds)",
         "",
         "Category breakdown:  " + "  ".join(f"{c}:{n}" for c, n in sorted(cats.items())),
         f"Deficit entities:    {', '.join(deficits) or 'none'}",
@@ -248,9 +230,8 @@ def _summarize_registry_state(path: Path) -> str:
         *[f"  {k:<32} {v:.4f}  ({n})" for k, v, n in weakest],
         "",
         f"Full data at: {path.resolve()}",
-        "(Load verbatim with: python aggregate.py --include-file mcp/registry_state.json)",
+        f"(Load verbatim with: python aggregate.py --include-file {path.as_posix()})",
     ])
-
 
 def _summarize_jsonl_log(path: Path) -> str:
     try:
@@ -289,23 +270,19 @@ def _summarize_jsonl_log(path: Path) -> str:
         f"Full log at: {path.resolve()}",
     ])
 
-
 # Lookup order: exact relative path first, then file extension.
 _SUMMARIZERS: dict[str, Callable[[Path], str]] = {
     "mcp/registry_state.json": _summarize_registry_state,
+    "effector/registry/state.json": _summarize_registry_state,  # Future-proofing for R2
     ".jsonl":                  _summarize_jsonl_log,
 }
-
 
 def _get_summarizer(rel_path: str) -> Callable[[Path], str] | None:
     if rel_path in _SUMMARIZERS:
         return _SUMMARIZERS[rel_path]
     return _SUMMARIZERS.get(Path(rel_path).suffix)
 
-
-# ---------------------------------------------------------------------------
 # File collection
-# ---------------------------------------------------------------------------
 
 def _read_file(path: Path, max_tokens: int | None, strip_divs: bool) -> str:
     try:
@@ -321,7 +298,6 @@ def _read_file(path: Path, max_tokens: int | None, strip_divs: bool) -> str:
             + f"\n... [TRUNCATED — {path.name} exceeds {max_tokens} token budget]"
         )
     return text
-
 
 def _walk_dir(
     path: Path,
@@ -370,7 +346,6 @@ def _walk_dir(
         results.append((rel_str, content))
 
     return results
-
 
 def _sample_dir(
     path: Path,
@@ -453,10 +428,7 @@ def _sample_dir(
 
     return results
 
-
-# ---------------------------------------------------------------------------
 # Git helpers
-# ---------------------------------------------------------------------------
 
 def _git(args: list[str], cwd: Path) -> str:
     try:
@@ -467,7 +439,6 @@ def _git(args: list[str], cwd: Path) -> str:
         return r.stdout.strip()
     except Exception:
         return ""
-
 
 def _build_session_header(root: Path, cfg: dict) -> str:
     hcfg = cfg.get("session_header", {})
@@ -525,17 +496,12 @@ def _build_session_header(root: Path, cfg: dict) -> str:
 
     return "\n".join(lines)
 
-
-# ---------------------------------------------------------------------------
 # Zone renderer
-# ---------------------------------------------------------------------------
 
 _SEP = "─" * 65
 
-
 def _zone_header(path_str: str) -> str:
     return f"\n{_SEP}\nFILE: {path_str}\n{_SEP}"
-
 
 def _render_zone(
     zone: dict,
@@ -618,10 +584,7 @@ def _render_zone(
 
     return None
 
-
-# ---------------------------------------------------------------------------
 # Aggregator
-# ---------------------------------------------------------------------------
 
 def aggregate(
     profile: str,
@@ -706,10 +669,7 @@ def aggregate(
 
     return "\n".join(parts)
 
-
-# ---------------------------------------------------------------------------
 # CLI
-# ---------------------------------------------------------------------------
 
 def _find_root() -> Path:
     here = Path.cwd()
@@ -719,7 +679,6 @@ def _find_root() -> Path:
         if (candidate / "pyproject.toml").exists():
             return candidate
     return here
-
 
 def main() -> None:
     p = argparse.ArgumentParser(

@@ -10,7 +10,6 @@ import uuid
 
 # --- PATH FIX ---
 # This forces Python to look in the 'src' directory next to 'tests'
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 # Depending on your exact folder structure, dasp might be under schemas/
 try:

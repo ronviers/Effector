@@ -85,12 +85,12 @@ label    = "Host environment spec"
 # ─── Code profile ─────────────────────────────────────────────────────────────
 
 [[zone]]
-path       = "src/effector"
+path       = "effector"
 profiles   = ["code", "mcp", "full"]
 handling   = "verbatim"
 priority   = 2
 max_tokens = 80000
-label      = "Core source (src/effector)"
+label      = "Core source (effector)"
 
 [[zone]]
 path     = "main_loop.py"
@@ -225,7 +225,7 @@ show_dirty_files = true
 show_topology    = true
 
 [[zone]]
-path     = "src/effector/intention"
+path     = "effector/intention"
 profiles = ["code", "full"]
 handling = "verbatim"
 priority = 7

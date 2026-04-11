@@ -61,7 +61,6 @@ _HERE     = Path(__file__).parent
 _ROOT     = _HERE.parent
 _OUT_DIR  = _ROOT / "resonance_test_audio"
 
-sys.path.insert(0, str(_ROOT / "src"))
 
 
 # ── Voice clips to generate ───────────────────────────────────────────────────

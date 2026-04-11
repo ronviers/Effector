@@ -10,7 +10,6 @@ import uuid
 import json
 
 # --- PATH FIX ---
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 from effector.bus import StateBus
 from effector.adapters.asymmetric_dasp import AsymmetricDASPCoordinator, TierConfig

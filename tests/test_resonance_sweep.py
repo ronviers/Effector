@@ -83,7 +83,6 @@ import pytest
 
 # ── Path fix ──────────────────────────────────────────────────────────────────
 _HERE = Path(__file__).parent
-sys.path.insert(0, str(_HERE.parent / "src"))
 
 # ── Lazy live-mode flag ───────────────────────────────────────────────────────
 def _is_live() -> bool:

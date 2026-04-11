@@ -25,6 +25,12 @@ dev = [
     "tomli-w>=1.0",
     "scikit-learn>=1.3",
 ]
+audio = [
+    "kokoro",
+    "sounddevice",
+    "diffusers==0.27.2",
+    "transformers==4.38.2",
+]
 intention = [
     "scikit-learn>=1.3",
 ]
@@ -33,7 +39,7 @@ intention = [
 effector = "effector.cli.main:app"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["."]
 include = ["effector*"]
 
 [tool.pytest.ini_options]

@@ -9,7 +9,6 @@ import uuid
 import json
 
 # --- PATH FIX ---
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 from effector.adapters.ollama_adapter import OllamaAgent
 from effector.schemas.dasp import AgentRequest
